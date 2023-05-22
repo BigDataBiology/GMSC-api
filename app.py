@@ -61,7 +61,7 @@ class SearchIDGenerator:
 
 next_search_id = SearchIDGenerator()
 
-@app.route('/v1/seq_search/', methods=['POST'])
+@app.route('/internal/seq-search/', methods=['POST'])
 def seq_search():
     sid = next_search_id.get_next_id()
     searches[sid] = datetime.now()
@@ -70,15 +70,15 @@ def seq_search():
         "status": "Ok",
         })
 
-@app.get('/v1/seq_search/<search_id>')
+@app.get('/internal/seq-search/<search_id>')
 def seq_search_results(search_id):
     if search_id not in searches:
         return {"error": "Invalid search ID"}, 400
     sdata = searches[search_id]
     if (datetime.now() - sdata).seconds < 10:
-        return {"status": "Running"}
+        return {"search_id": search_id, "status": "Running"}
     if (datetime.now() - sdata).seconds > 120:
-        return {"status": "Expired"}
+        return {"search_id": search_id, "status": "Expired"}
     return jsonify({
         "search_id": search_id,
         "status": "Done",
