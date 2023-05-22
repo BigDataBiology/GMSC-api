@@ -1,6 +1,16 @@
 from flask import Flask, request, jsonify
 from fna2faa_gmsc import translate
 from datetime import datetime
+from os import path
+import sqlite3
+DB_PATH = 'gmsc-db/gmsc10hq.sqlite3'
+if path.exists(DB_PATH):
+    con = sqlite3.connect(DB_PATH, check_same_thread=False)
+else:
+    import sys
+    sys.stderr.write(f'WARNING: Database file {DB_PATH} not found\n')
+    sys.stderr.write(f'WARNING: Using demo database\n')
+    con = sqlite3.connect('gmsc10-demo.sqlite3', check_same_thread=False)
 
 app = Flask('GMSC')
 
@@ -38,6 +48,49 @@ def get_seq_info(seq_id):
         "taxonomy": taxonomy,
         })
 
+
+def with_digits(prefix, n):
+    n = f'{n:09}'
+    return f'{prefix}.{n[:3]}_{n[3:6]}_{n[6:9]}'
+
+def parse_bool(s : str):
+    s = s.lower()
+    if s in ('true', '1', 'yes'):
+        return True
+    if s in ('false', '0', 'no'):
+        return False
+    return None
+
+@app.route('/v1/seq-filter/', methods=['POST'])
+def get_seq_filter():
+    cur = con.cursor()
+    hq_only = request.form.get('hq_only', False)
+    if not parse_bool(hq_only):
+        return {"status": "error", "msg": "Only HQ searching supported (at the moment)"}, 400
+    habitat = request.form.get('habitat')
+    if habitat is None:
+        return {"status": "error", "msg": "Invalid habitat value"}, 400
+    q = "SELECT * FROM smorf90aa " \
+                    "WHERE " \
+                        "instr(habitat, ?) > 0 "
+    qargs = [habitat]
+    taxonomy = request.form.get('taxonomy')
+    if taxonomy is not None :
+        if '__' not in taxonomy:
+            return {"status": "error", "msg": "Invalid taxonomy value"}, 400
+        q += "AND instr(taxonomy, ?) > 0 "
+        qargs.append(taxonomy)
+    q += "LIMIT 1001"
+    results = [
+        { "seq_id": with_digits("GMSC10.90AA", i),
+           "habitat": habitat,
+           "taxonomy": taxonomy}
+           for (i, habitat, taxonomy) in
+                cur.execute(q, qargs).fetchall()]
+    return jsonify({
+        "status": "Ok",
+        "results": results,
+        })
 
 searches = {}
 

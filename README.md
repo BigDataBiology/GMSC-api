@@ -18,6 +18,33 @@ Returns
 }
 ```
 
+- `https://{{base_url}}/v1/seq-filter/`
+
+`POST` endpoint, with arguments:
+
+- `hq_only`: boolean. Currently must be `true`
+- `habitat`: str. _mandatory_
+- `taxonomy`: str. _optional_
+
+Both `habitat` and `taxonomy` are substring matches (_e.g._, passing `marine` will match `freshwater,marine,human gut`).
+
+Returns
+
+```json
+{
+    "status":"Ok",
+    "results": [
+            {
+                "habitat":"marine,plant associated,sediment",
+                "seq_id":"GMSC10.90AA.000_013_322",
+                "taxonomy":"d__Bacteria"},
+                ....
+    ]
+}
+```
+
+At most 1,001 entries are returned.
+
 ### Sequence search interface (non-public interface)
 
 **NOTE**. These are not recommended for public use. For large-scale analyses,
