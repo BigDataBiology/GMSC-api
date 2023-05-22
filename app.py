@@ -3,6 +3,12 @@ from fna2faa_gmsc import translate
 from datetime import datetime
 from os import path
 import sqlite3
+import threading
+from time import sleep
+from concurrent.futures import ThreadPoolExecutor
+from collections import namedtuple
+
+DB_DIR = 'gmsc-db'
 DB_PATH = 'gmsc-db/gmsc10hq.sqlite3'
 if path.exists(DB_PATH):
     con = sqlite3.connect(DB_PATH, check_same_thread=False)
@@ -92,8 +98,6 @@ def get_seq_filter():
         "results": results,
         })
 
-searches = {}
-
 class SearchIDGenerator:
     def __init__(self):
         self.next_id = 0
@@ -112,12 +116,66 @@ class SearchIDGenerator:
     def get_cur_index(self) -> int:
         return self.next_id
 
+searches = {}
 next_search_id = SearchIDGenerator()
+search_lock = threading.Lock()
+searcher = ThreadPoolExecutor(2)
+SearchObject = namedtuple("SearchObject", ["start_time", "future"])
+
+def parse_gmsc_mapper_results(basedir):
+    import pandas as pd
+    alignment = pd.read_table(f'{basedir}/alignment.out.smorfs.tsv', header=None)
+    habitat = pd.read_table(f'{basedir}/habitat.out.smorfs.tsv', index_col=0)
+    quality = pd.read_table(f'{basedir}/quality.out.smorfs.tsv', index_col=0)
+    taxonomy = pd.read_table(f'{basedir}/taxonomy.out.smorfs.tsv', index_col=0)
+    meta = pd.concat([habitat, quality, taxonomy], axis=1)
+    alignment.columns = 'qseqid,sseqid,full_qseq,full_sseq,qlen,slen,length,qstart,qend,sstart,send,bitscore,pident,evalue,qcovhsp,scovhsp'.split(',')
+
+    result = meta.to_dict('index')
+
+    for k in result.keys():
+        loc = alignment.query('qseqid == @k')
+        result[k]['aminoacid'] = loc.head(1).full_qseq.values[0]
+        result[k]['hits'] = \
+                loc[['sseqid', 'evalue', 'pident']].rename(columns=
+                    {'sseqid': 'id',
+                    'pident': 'identity'},).to_dict('records')
+    return result
+
+def do_search(seqdata):
+    import tempfile
+    import subprocess
+    with tempfile.TemporaryDirectory() as tdir:
+        if not path.exists(DB_DIR):
+            sleep(10)
+            return parse_gmsc_mapper_results('./demo_gmsc_mapper_output')
+        with open(path.join(tdir, "seqs.faa"), "w") as f:
+            f.write(seqdata)
+        sleep(1)
+        subprocess.check_call(
+                ['gmsc-mapper',
+                 '--aa-genes', path.join(tdir, "seqs.faa"),
+                 '-o', path.join(tdir, "output"),
+                 '--threads', '12',
+                 '--db', f'{DB_DIR}/90AA_GMSC.dmnd',
+                 '--habitat', f'{DB_DIR}/90AA_habitat.npy',
+                 '--habitat-index', f'{DB_DIR}/90AA_ref_multi_general_habitat_index.tsv',
+                 '--quality', f'{DB_DIR}/90AA_highquality.txt.gz',
+                 '--taxonomy', f'{DB_DIR}/90AA_taxonomy.npy',
+                 '--taxonomy-index', f'{DB_DIR}/90AA_ref_taxonomy_index.tsv',
+                 ],
+                )
+
+        return parse_gmsc_mapper_results(path.join(tdir, "output"))
+
 
 @app.route('/internal/seq-search/', methods=['POST'])
 def seq_search():
-    sid = next_search_id.get_next_id()
-    searches[sid] = datetime.now()
+    now = datetime.now()
+    seqdata = request.form.get('sequence_faa')
+    with search_lock:
+        sid = next_search_id.get_next_id()
+        searches[sid] = SearchObject(now, searcher.submit(do_search, seqdata))
     return jsonify({
         "search_id": sid,
         "status": "Ok",
@@ -127,26 +185,13 @@ def seq_search():
 def seq_search_results(search_id):
     if search_id not in searches:
         return {"error": "Invalid search ID"}, 400
-    sdata = searches[search_id]
-    if (datetime.now() - sdata).seconds < 10:
+    sdata = searches[search_id].future
+    if not sdata.done():
+        sleep(1)
         return {"search_id": search_id, "status": "Running"}
-    if (datetime.now() - sdata).seconds > 120:
-        return {"search_id": search_id, "status": "Expired"}
+    r = sdata.result()
     return jsonify({
         "search_id": search_id,
         "status": "Done",
-        "results": [
-            {
-                "query_id": "query_1",
-                "aminoacid": "MHEDVIQFARNEVWSLV....",
-                "taxonomy": "s__Bacteroides_vulgatus",
-                "habitat": "human gut",
-                "hits": [
-                    { "id": "GMSC10.xxAA.xxx_xxx_xxxx",
-                      "e_value": "2.1e-23",
-                      "aminoacid": "MHEELIQFARNEV...",
-                      "identity": "98.4"
-                    },
-                ]
-            },
-        ]})
+        "results": r
+        })

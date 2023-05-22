@@ -122,7 +122,7 @@ Searching requires using `POST` and a FASTA file. For example, if you have the
 file `example.faa`, you can use
 
 ```bash
-curl -d "sequence_faa=@example.faa" http://127.0.0.1:5000/internal/seq-search/
+curl -X POST --form "sequence_faa=$(cat example.faa)" http://127.0.0.1:5000/internal/seq-search/
 ```
 
 The output will look something like this:
