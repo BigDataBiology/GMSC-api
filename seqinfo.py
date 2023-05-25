@@ -17,7 +17,7 @@ class SeqInfo:
     def __init__(self, database):
         if database not in ('90AA', '100AA'):
             raise NotImplementedError(f'Database was {database}! Only "90AA" and "100AA" are supported')
-        self.seqix = IndexedFastaReader(f'{BASE_DIR}/GMSC10.{database}.fna.xz')
+        self.seqix = IndexedFastaReader(f'{BASE_DIR}/GMSC10.{database}.fna')
         self.database = database
         self.habitat = pd.read_table(f'{BASE_DIR}/{database}_ref_multi_general_habitat_index.tsv',
                                     index_col=0,
