@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from datetime import datetime
-from os import path
+from os import path, environ
 import threading
 from time import sleep
 from concurrent.futures import ThreadPoolExecutor
@@ -176,3 +176,20 @@ def seq_search_results(search_id):
         "status": "Done",
         "results": r
         })
+
+@app.route('/internal/seq-search-list/', methods=['POST'])
+def seq_search_list():
+    secret = environ.get('GMSC_API_INTERNAL_PWD', None)
+    pwd = request.form.get('pwd')
+    if secret is None:
+        return {"error": "Invalid search ID"}, 500
+    if pwd != secret:
+        return {"error": "Wrong password"}, 403
+    return {
+            "status": "Ok",
+            "searches": [
+                {"search_id": k,
+                "status": ("Done" if v.future.done() else "Waiting")
+                } for k,v in searches.items()],
+            }
+
