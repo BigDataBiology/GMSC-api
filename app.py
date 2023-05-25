@@ -1,7 +1,6 @@
 from flask import Flask, request, jsonify
 from datetime import datetime
 from os import path
-import sqlite3
 import threading
 from time import sleep
 from concurrent.futures import ThreadPoolExecutor
@@ -11,16 +10,13 @@ from flask_cors import CORS
 from seqinfo import SeqInfo
 
 DB_DIR = 'gmsc-db'
-DB_PATH = 'gmsc-db/gmsc10hq.sqlite3'
-if path.exists(DB_PATH):
-    con = sqlite3.connect(DB_PATH, check_same_thread=False)
+if path.exists(DB_DIR):
     seqinfo90 = SeqInfo( '90AA')
     IS_DEMO = False
 else:
     import sys
-    sys.stderr.write(f'WARNING: Database file {DB_PATH} not found\n')
+    sys.stderr.write(f'WARNING: Database directory {DB_DIR} not found\n')
     sys.stderr.write(f'WARNING: Using demo database\n')
-    con = sqlite3.connect('gmsc10-demo.sqlite3', check_same_thread=False)
     IS_DEMO = True
 
 app = Flask('GMSC')
@@ -63,7 +59,6 @@ def parse_bool(s : str):
 
 @app.route('/v1/seq-filter/', methods=['POST'])
 def get_seq_filter():
-    cur = con.cursor()
     hq_only = request.form.get('hq_only', False)
     habitat = request.form.get('habitat')
     if habitat is None:
