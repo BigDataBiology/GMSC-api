@@ -150,7 +150,8 @@ The output will look something like this:
 {"search_id":"1-jmgi","status":"Ok"}
 ```
 
-You can later use the given ID to retrieve the results:
+You can later use the given ID (in this case `1-jmgi`, but it will be different
+every time the app runs) to retrieve the results:
 
 ```bash
 curl http://127.0.0.1:5000/internal/seq-search/1-jgmi
