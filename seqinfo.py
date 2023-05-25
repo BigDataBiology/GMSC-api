@@ -5,6 +5,7 @@ from fasta_reader import IndexedFastaReader
 from fna2faa_gmsc import translate
 
 BASE_DIR = 'gmsc-db/'
+MAX_FILTER_RESULTS = 100
 
 def with_digits(prefix, n):
     n = f'{n:09}'
@@ -63,7 +64,7 @@ class SeqInfo:
         rs = []
         for i,ix in enumerate(ixs):
             seq_id = with_digits(f'GMSC10.{self.database}', ix)
-            if i < 0:
+            if i < MAX_FILTER_RESULTS:
                 rs.append(self.get_seqinfo(seq_id))
             else:
                 rs.append({'seq_id': seq_id})
