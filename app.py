@@ -9,6 +9,8 @@ from flask_cors import CORS
 
 from seqinfo import SeqInfo
 
+NR_THREADS_GMSC_MAPPER = 2
+
 DB_DIR = 'gmsc-db'
 if path.exists(DB_DIR):
     seqinfo90 = SeqInfo( '90AA')
@@ -135,7 +137,7 @@ def do_search(seqdata):
                 ['gmsc-mapper',
                  '--aa-genes', path.join(tdir, "seqs.faa"),
                  '-o', path.join(tdir, "output"),
-                 '--threads', '12',
+                 '--threads', str(NR_THREADS_GMSC_MAPPER),
                  '--db', f'{DB_DIR}/90AA_GMSC.dmnd',
                  '--habitat', f'{DB_DIR}/90AA_habitat.npy',
                  '--habitat-index', f'{DB_DIR}/90AA_ref_multi_general_habitat_index.tsv',
