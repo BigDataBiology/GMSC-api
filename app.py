@@ -26,29 +26,6 @@ else:
 app = Flask('GMSC')
 CORS(app)
 
-sequences = [
-    ("GMSC10.100AA.000_000_000", "GTGGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCGGCAGGTGGGGCAAGAGGAGAGAATTTTGACGAGAATAAAATAGACGCAGAAAGAGAAGCAGGAGTAGACGTACAAGTCGATCGCGGGGTGCTGCTGCTGTTGCTGTTGATCCTACTGCTGCTATTGCTGCTGCTGCTGCTGCTGTTGGTGCTGGTGACGCTGGCCGCCGTGCTCCCTTGTCGGGATAAGGGCGGGGATTGA", "water associated", ""),
-
-    ("GMSC10.100AA.000_000_001", "ATGGCTGCTGCAGCAGCAGCTGCTGCTGCTGCTGCCGCCGCCTTTGTAGTTTTCGTAGGTTTTCCATCGTCATCTTTCTTGTCTGATGATTTTCTAACATTCTTGTCAGAATCCGGAAAGGATGGCAGGGCGGGTTTCCGGCTCCGAGGAAATCGAGGTGGCGGAGCTCTAGTTTCTTGGTATCCTGCCAATATCTGTTGGGCATCAATAGCAGCATCTACTAGATTGGAAATGTACCGGGCTGTCAATTCTGAGAGGAGTTGA", "marine", ""),
-    ("GMSC10.100AA.000_000_002", "GTGGCTGCTGCTGCTGCTGCTGCTGCTGCTGCTGCTGCCAAAGGGAGTGCTGTGCGCAATATATTTTCGACGGGCATGCTTGAGACACTGCGAGCACTGGCTGACGGTGTTGCAGCATCTGATATACTTCCAAGAGTACTGGCAGTACGTCATCGTTCAATACTGCCCATACCGCGAGTGAGTATACTCGCAGTATTTCGGATTATGTATGTCTGTACTGCCTGA", "marine", ""),
-    ("GMSC10.100AA.000_000_003", "ATGGCCGCCGCCGCAGCCGCCGCCGCCGCCGCCGCCGCCGTCGGAACCTCCTTGGACACCGGGCCGGACCCGCTGATGGCGATGCTCGCCGGCGATTTCCAGCCCGCGGCGGGGTTCAAGTCGAGCGACTCGGCGCCGGAGCTCGTCGAGGTTGTCAAGATTCACTCTCCGGTTGTCGCGACGGGGGAGAACGGCGCCGCGAGCGCGATGGATGTCCTGACGGAGCCGGCTTGA", "marine", ""),
-    ("GMSC10.100AA.000_000_004", "ATGGCCGCCGCCGCCGCCGCCGCCGCCGCAGCCGCCGCCGTCGGAACCTCCGTGGACACCGGGCCGGACCCGCTGATGGCGATGCTCGCCGGCGATTTCCAGCCCGCTGCGGGGTTCAAGTCGAGCGACTCGGCGCCGGAGCTCGTCGAGGTTGTCAAGATTCACTCGCCGGTTGTCGCGACGGGGGAGAACGGCGCCGCGAGCGCGATGGATGTCCTGACGGAGCCGGCTTGA", "soil", "d__Bacteria;p__Actinobacteriota;c__Actinomycetia;o__Streptosporangiales;f__Streptosporangiaceae"),
-    ("GMSC10.100AA.000_000_005", "GTGGCGGCTGCGGCCGCAGCTGCCGCAGCGGCGGCCTGGACCTGGGCTTTTTCCTTCAGGTCGGCCATCTTGTTGTTCATGTCCTGCAGTTTTTCATCGGCGGCCTGGCGAATGCTGTCCAGATCGACCTTTTCAGAAAACTCGCACCAGGTGAGCACACCCACCATCAGCGGCAGCAAGAAGACGAAAGCCGAGGCCAGCGCAAACACCAGGCTGAAGCCCACGCCTGCCCCCATCATGTGGCCCGAGGCGCCGCCCATCATGATGGCCATGGGGTTAAAGCCACCCATTCCATAA", "soil", "d__Bacteria;p__Actinobacteriota;c__Actinomycetia"),
-]
-
-def get_demo_seqinfo(seq_ix):
-    if seq_id >= len(sequences):
-        return {"error": "Invalid sequence ID (too large)"}, 400
-    (seq_id, nuc, habitat, taxonomy) = sequences[seq_id]
-    aa = translate(nuc)
-    return jsonify({
-        "seq_id": seq_id,
-        "nucleotide": nuc,
-        "aminoacid": aa,
-        "habitat": habitat,
-        "taxonomy": taxonomy,
-        })
-
 
 @app.get("/v1/seq-info/<seq_id>")
 def get_seq_info(seq_id):
@@ -61,14 +38,11 @@ def get_seq_info(seq_id):
     if sample_type not in ('100AA', '90AA'):
         return {"error": "Invalid sequence ID (seq type must be '90AA' or '100AA')"}, 400
     if IS_DEMO:
+        from demo import get_demo_seqinfo
         return get_demo_seqinfo(int(seq_ix))
     return seqinfo90.get_seqinfo(seq_id)
 
 
-
-def with_digits(prefix, n):
-    n = f'{n:09}'
-    return f'{prefix}.{n[:3]}_{n[3:6]}_{n[6:9]}'
 
 def parse_bool(s : str):
     s = s.lower()
@@ -82,28 +56,14 @@ def parse_bool(s : str):
 def get_seq_filter():
     cur = con.cursor()
     hq_only = request.form.get('hq_only', False)
-    if not parse_bool(hq_only):
-        return {"status": "error", "msg": "Only HQ searching supported (at the moment)"}, 400
     habitat = request.form.get('habitat')
     if habitat is None:
         return {"status": "error", "msg": "Invalid habitat value"}, 400
-    q = "SELECT * FROM smorf90aa " \
-                    "WHERE " \
-                        "instr(habitat, ?) > 0 "
-    qargs = [habitat]
     taxonomy = request.form.get('taxonomy')
     if taxonomy is not None :
         if '__' not in taxonomy:
             return {"status": "error", "msg": "Invalid taxonomy value"}, 400
-        q += "AND instr(taxonomy, ?) > 0 "
-        qargs.append(taxonomy)
-    q += "LIMIT 1001"
-    results = [
-        { "seq_id": with_digits("GMSC10.90AA", i),
-           "habitat": habitat,
-           "taxonomy": taxonomy}
-           for (i, habitat, taxonomy) in
-                cur.execute(q, qargs).fetchall()]
+    results = seqinfo90.seq_filter(hq_only, habitat, taxonomy)
     return jsonify({
         "status": "Ok",
         "results": results,
