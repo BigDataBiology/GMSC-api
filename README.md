@@ -103,6 +103,7 @@ Dependencies
 - `flask-cors`
 - `numpy`
 - `pandas`
+- [fasta_reader](https://github.com/BigDataBiology/fasta_reader)
 
 Running this (in test mode) can be done with
 

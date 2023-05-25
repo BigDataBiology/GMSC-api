@@ -1,5 +1,4 @@
 from flask import Flask, request, jsonify
-from fna2faa_gmsc import translate
 from datetime import datetime
 from os import path
 import sqlite3
@@ -9,16 +8,20 @@ from concurrent.futures import ThreadPoolExecutor
 from collections import namedtuple
 from flask_cors import CORS
 
+from seqinfo import SeqInfo
 
 DB_DIR = 'gmsc-db'
 DB_PATH = 'gmsc-db/gmsc10hq.sqlite3'
 if path.exists(DB_PATH):
     con = sqlite3.connect(DB_PATH, check_same_thread=False)
+    seqinfo90 = SeqInfo( '90AA')
+    IS_DEMO = False
 else:
     import sys
     sys.stderr.write(f'WARNING: Database file {DB_PATH} not found\n')
     sys.stderr.write(f'WARNING: Using demo database\n')
     con = sqlite3.connect('gmsc10-demo.sqlite3', check_same_thread=False)
+    IS_DEMO = True
 
 app = Flask('GMSC')
 CORS(app)
@@ -33,18 +36,7 @@ sequences = [
     ("GMSC10.100AA.000_000_005", "GTGGCGGCTGCGGCCGCAGCTGCCGCAGCGGCGGCCTGGACCTGGGCTTTTTCCTTCAGGTCGGCCATCTTGTTGTTCATGTCCTGCAGTTTTTCATCGGCGGCCTGGCGAATGCTGTCCAGATCGACCTTTTCAGAAAACTCGCACCAGGTGAGCACACCCACCATCAGCGGCAGCAAGAAGACGAAAGCCGAGGCCAGCGCAAACACCAGGCTGAAGCCCACGCCTGCCCCCATCATGTGGCCCGAGGCGCCGCCCATCATGATGGCCATGGGGTTAAAGCCACCCATTCCATAA", "soil", "d__Bacteria;p__Actinobacteriota;c__Actinomycetia"),
 ]
 
-
-@app.get("/v1/seq-info/<seq_id>")
-def get_seq_info(seq_id):
-    tokens = seq_id.split(".")
-    if len(tokens) != 3:
-        return {"error": "Invalid sequence ID (only 'GMSC10' database supported)"}, 400
-    (db, sample_type, seq_id) = tokens
-    if db != 'GMSC10':
-        return {"error": "Invalid sequence ID"}, 400
-    if sample_type not in ('100AA', '90AA'):
-        return {"error": "Invalid sequence ID (seq type must be '90AA' or '100AA')"}, 400
-    seq_id = int(seq_id, 10)
+def get_demo_seqinfo(seq_ix):
     if seq_id >= len(sequences):
         return {"error": "Invalid sequence ID (too large)"}, 400
     (seq_id, nuc, habitat, taxonomy) = sequences[seq_id]
@@ -56,6 +48,22 @@ def get_seq_info(seq_id):
         "habitat": habitat,
         "taxonomy": taxonomy,
         })
+
+
+@app.get("/v1/seq-info/<seq_id>")
+def get_seq_info(seq_id):
+    tokens = seq_id.split(".")
+    if len(tokens) != 3:
+        return {"error": "Invalid sequence ID (only 'GMSC10' database supported)"}, 400
+    (db, sample_type, seq_ix) = tokens
+    if db != 'GMSC10':
+        return {"error": "Invalid sequence ID"}, 400
+    if sample_type not in ('100AA', '90AA'):
+        return {"error": "Invalid sequence ID (seq type must be '90AA' or '100AA')"}, 400
+    if IS_DEMO:
+        return get_demo_seqinfo(int(seq_ix))
+    return seqinfo90.get_seqinfo(seq_id)
+
 
 
 def with_digits(prefix, n):
