@@ -5,7 +5,8 @@ from fasta_reader import IndexedFastaReader
 from fna2faa_gmsc import translate
 
 BASE_DIR = 'gmsc-db/'
-MAX_FILTER_RESULTS = 100
+MAX_THICK_RESULTS = 20
+MAX_TOTAL_RESULTS = 1000
 
 def with_digits(prefix, n):
     n = f'{n:09}'
@@ -61,10 +62,12 @@ class SeqInfo:
             match_taxonomy = self.taxonomy.str.contains(taxonomy_q).values[self.taxonomy_ix]
             matches &= match_taxonomy
         [ixs] = np.where(matches)
+        # Highest numbers are best
+        ixs = ixs[::-1]
         rs = []
-        for i,ix in enumerate(ixs):
+        for i,ix in enumerate(ixs[:MAX_TOTAL_RESULTS]):
             seq_id = with_digits(f'GMSC10.{self.database}', ix)
-            if i < MAX_FILTER_RESULTS:
+            if i < MAX_THICK_RESULTS:
                 rs.append(self.get_seqinfo(seq_id))
             else:
                 rs.append({'seq_id': seq_id})
