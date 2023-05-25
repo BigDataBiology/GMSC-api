@@ -11,9 +11,9 @@ sequences = [
 ]
 
 def get_demo_seqinfo(seq_ix):
-    if seq_id >= len(sequences):
+    if seq_ix >= len(sequences):
         return {"error": "Invalid sequence ID (too large)"}, 400
-    (seq_id, nuc, habitat, taxonomy) = sequences[seq_id]
+    (seq_id, nuc, habitat, taxonomy) = sequences[seq_ix]
     aa = translate(nuc)
     return jsonify({
         "seq_id": seq_id,
