@@ -50,6 +50,10 @@ def get_seq_info_multi():
 
 
 def parse_bool(s : str):
+    if s is None:
+        return False
+    if s in (True, False):
+        return s
     s = s.lower()
     if s in ('true', '1', 'yes'):
         return True
