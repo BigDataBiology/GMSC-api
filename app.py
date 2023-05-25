@@ -43,6 +43,15 @@ def get_seq_info(seq_id):
     return seqinfo90.get_seqinfo(seq_id)
 
 
+@app.post("/v1/seq-info-multi/")
+def get_seq_info_multi():
+    entries = request.json.get('seq_ids')
+    if entries is None:
+        return {"error": "Missing seq_ids parameter"}, 400
+    if len(entries) > 100:
+        return {"error": "Too many seq_ids"}, 400
+    return [seqinfo90.get_seqinfo(e) for e in entries]
+
 
 def parse_bool(s : str):
     s = s.lower()
@@ -63,7 +72,7 @@ def get_seq_filter():
     if taxonomy is not None :
         if '__' not in taxonomy:
             return {"status": "error", "msg": "Invalid taxonomy value"}, 400
-    results = seqinfo90.seq_filter(hq_only, habitat, taxonomy)
+    results = seqinfo90.seq_filter(parse_bool(hq_only), habitat, taxonomy)
     return jsonify({
         "status": "Ok",
         "results": results,

@@ -18,6 +18,23 @@ Returns
 }
 ```
 
+- `https://{{base_url}}/v1/seq-info-multi/`
+
+This is a `POST`-only endpoint, expecting a JSON package consisting of a
+dictonary with an entry `seq_ids`, which is a list of strings (identifiers).
+For example:
+
+```json
+{
+    "seq_ids": [
+            "GMSC10.90AA.123_456_789",
+            "GMSC10.90AA.123_456_790",
+            ...]
+}
+```
+
+Returns a list of entries like the outputs of `seq-info`.
+
 - `https://{{base_url}}/v1/seq-filter/`
 
 `POST` endpoint, with arguments:
