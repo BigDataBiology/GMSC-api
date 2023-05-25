@@ -7,6 +7,8 @@ import threading
 from time import sleep
 from concurrent.futures import ThreadPoolExecutor
 from collections import namedtuple
+from flask_cors import CORS
+
 
 DB_DIR = 'gmsc-db'
 DB_PATH = 'gmsc-db/gmsc10hq.sqlite3'
@@ -19,6 +21,7 @@ else:
     con = sqlite3.connect('gmsc10-demo.sqlite3', check_same_thread=False)
 
 app = Flask('GMSC')
+CORS(app)
 
 sequences = [
     ("GMSC10.100AA.000_000_000", "GTGGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCAGCGGCAGGTGGGGCAAGAGGAGAGAATTTTGACGAGAATAAAATAGACGCAGAAAGAGAAGCAGGAGTAGACGTACAAGTCGATCGCGGGGTGCTGCTGCTGTTGCTGTTGATCCTACTGCTGCTATTGCTGCTGCTGCTGCTGCTGTTGGTGCTGGTGACGCTGGCCGCCGTGCTCCCTTGTCGGGATAAGGGCGGGGATTGA", "water associated", ""),

@@ -100,6 +100,7 @@ or `Expired`. In the case of `Done`, the `results` field will be filled in.
 Dependencies
 
 - `flask`
+- `flask-cors`
 - `numpy`
 - `pandas`
 
