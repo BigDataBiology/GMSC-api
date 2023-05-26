@@ -1,6 +1,7 @@
 import pandas as pd
 import gzip
 import numpy as np
+from os import path
 from fasta_reader import IndexedFastaReader
 from fna2faa_gmsc import translate
 
@@ -17,7 +18,11 @@ class SeqInfo:
     def __init__(self, database):
         if database not in ('90AA', '100AA'):
             raise NotImplementedError(f'Database was {database}! Only "90AA" and "100AA" are supported')
-        self.seqix = IndexedFastaReader(f'{BASE_DIR}/GMSC10.{database}.fna')
+        self.seqix = IndexedFastaReader(
+                f'{BASE_DIR}/GMSC10.{database}.fna'
+                if path.exists(f'{BASE_DIR}/GMSC10.{database}.fna')
+                else f'{BASE_DIR}/GMSC10.{database}.fna.xz'
+                )
         self.database = database
         self.habitat = pd.read_table(f'{BASE_DIR}/{database}_ref_multi_general_habitat_index.tsv',
                                     index_col=0,
