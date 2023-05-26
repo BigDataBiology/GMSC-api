@@ -74,7 +74,7 @@ def parse_bool(s : str):
         return False
     return None
 
-@app.route('/v1/seq-filter/', methods=['POST'])
+@app.post('/v1/seq-filter/')
 def get_seq_filter():
     hq_only = request.form.get('hq_only', False)
     habitat = request.form.get('habitat')
@@ -161,7 +161,7 @@ def do_search(seqdata):
         return parse_gmsc_mapper_results(path.join(tdir, "output"))
 
 
-@app.route('/internal/seq-search/', methods=['POST'])
+@app.post('/internal/seq-search/')
 def seq_search():
     now = datetime.now()
     seqdata = request.form.get('sequence_faa')
@@ -188,7 +188,7 @@ def seq_search_results(search_id):
         "results": r
         })
 
-@app.route('/internal/seq-search-list/', methods=['POST'])
+@app.post('/internal/seq-search-list/')
 def seq_search_list():
     secret = environ.get('GMSC_API_INTERNAL_PWD', None)
     pwd = request.form.get('pwd')
