@@ -78,3 +78,10 @@ class SeqInfo:
                 rs.append({'seq_id': seq_id})
         return rs
 
+class ClusterIx:
+    def __init__(self):
+        self.ix = np.load('gmsc-db/GMSC10.cluster.index.npy', mmap_mode='r')
+        self.data = np.load('gmsc-db/GMSC10.cluster.data.npy', mmap_mode='r')
+
+    def get_cluster_members(self, n : int):
+        return self.data[self.ix[n]:self.ix[n+1]]

@@ -62,6 +62,26 @@ Returns
 
 At most 1,001 entries are returned.
 
+- `https://{{base_url}}/v1/cluster-info/{{gmsc_90AA_id}}`
+
+Returns the membership of the given cluster. At most **20 results** are _thick_ (meaning that metadata is also returned. For the rest, only identifiers are returned. Example output
+
+```json
+{
+	"status":" Ok",
+	"cluster": [
+		{
+			"aminoacid":"MAAAGFLIVSFKPFEKPSRNAATTAGFSAENFEFTMIALPYSLRP",
+			"habitat":"soil",
+			"nucleotide":"ATGGCCGCGGCCGGATTCTTGATCGTGTCCTTCAAGCCTTTCGAGAAGCCTTCGAGAAACGCCGCGACGACGGCCGGCTTCTCGGCCGAGAATTTCGAGTTCACGATGATCGCGCTGCCGTACAGCTTGAGACCGTAA",
+			"seq_id":"GMSC10.100AA.547_444_661",
+			"taxonomy":"d__Bacteria;p__Proteobacteria;c__Alphaproteobacteria;o__Rhizobiales;f__Xanthobacteraceae;g__VAZQ01;s__VAZQ01 sp005883115"
+		}, ...
+		]
+}
+```
+
+
 ### Sequence search interface (non-public interface)
 
 **NOTE**. These are not recommended for public use. For large-scale analyses,

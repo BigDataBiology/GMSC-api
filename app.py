@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 from collections import namedtuple
 from flask_cors import CORS
 
-from seqinfo import SeqInfo
+from seqinfo import SeqInfo, ClusterIx, with_digits
 
 NR_THREADS_GMSC_MAPPER = 2
 
@@ -15,6 +15,7 @@ DB_DIR = 'gmsc-db'
 if path.exists(DB_DIR):
     seqinfo90  = SeqInfo( '90AA')
     seqinfo100 = SeqInfo('100AA')
+    clusterinfo = ClusterIx()
     IS_DEMO = False
 else:
     import sys
@@ -89,6 +90,32 @@ def get_seq_filter():
         "status": "Ok",
         "results": results,
         })
+
+
+@app.get('/v1/cluster-info/<cluster_id>')
+def get_cluster_info(cluster_id):
+    tokens = cluster_id.split(".")
+    if len(tokens) != 3:
+        return {"error": "Invalid sequence ID (only 'GMSC10' database supported)"}, 400
+    (db, cluster_level, seq_ix) = tokens
+    if db != 'GMSC10':
+        return {"error": "Invalid sequence ID"}, 400
+    if cluster_level != '90AA':
+        return {"error": "Invalid sequence ID: only 90AA identifiers can be used for cluster-info"}, 400
+    members = clusterinfo.get_cluster_members(int(seq_ix))
+    rs = []
+    for m in members:
+        m = with_digits('GMSC10.100AA', m)
+        if len(rs) < 20:
+            rs.append(seqinfo100.get_seqinfo(m))
+        else:
+            rs.append({'seq_id': m})
+    return {
+            'status': 'Ok',
+            'cluster': rs,
+            }
+
+
 
 class SearchIDGenerator:
     def __init__(self):
