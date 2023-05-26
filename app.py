@@ -180,7 +180,10 @@ def seq_search_results(search_id):
     sdata = searches[search_id].future
     if not sdata.done():
         sleep(1)
-        return {"search_id": search_id, "status": "Running"}
+        return {
+                "search_id": search_id,
+                "status": 'Running' if sdata.running() else 'Queued'
+                }
     r = sdata.result()
     return jsonify({
         "search_id": search_id,
@@ -196,11 +199,17 @@ def seq_search_list():
         return {"error": "Invalid search ID"}, 500
     if pwd != secret:
         return {"error": "Wrong password"}, 403
+    def status_for(f):
+        if f.done():
+            return "Done"
+        if f.running():
+            return "Running"
+        return "Queued"
     return {
             "status": "Ok",
             "searches": [
                 {"search_id": k,
-                "status": ("Done" if v.future.done() else "Waiting")
+                "status": status_for(v.future),
                 } for k,v in searches.items()],
             }
 
