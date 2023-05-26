@@ -13,7 +13,8 @@ NR_THREADS_GMSC_MAPPER = 2
 
 DB_DIR = 'gmsc-db'
 if path.exists(DB_DIR):
-    seqinfo90 = SeqInfo( '90AA')
+    seqinfo90  = SeqInfo( '90AA')
+    seqinfo100 = SeqInfo('100AA')
     IS_DEMO = False
 else:
     import sys
@@ -30,15 +31,15 @@ def get_seq_info(seq_id):
     tokens = seq_id.split(".")
     if len(tokens) != 3:
         return {"error": "Invalid sequence ID (only 'GMSC10' database supported)"}, 400
-    (db, sample_type, seq_ix) = tokens
+    (db, cluster_level, seq_ix) = tokens
     if db != 'GMSC10':
         return {"error": "Invalid sequence ID"}, 400
-    if sample_type not in ('100AA', '90AA'):
+    if cluster_level not in ('100AA', '90AA'):
         return {"error": "Invalid sequence ID (seq type must be '90AA' or '100AA')"}, 400
     if IS_DEMO:
         from demo import get_demo_seqinfo
         return get_demo_seqinfo(int(seq_ix))
-    return seqinfo90.get_seqinfo(seq_id)
+    return (seqinfo90 if cluster_level == '90AA' else seqinfo100).get_seqinfo(seq_id)
 
 
 @app.post("/v1/seq-info-multi/")
@@ -48,7 +49,17 @@ def get_seq_info_multi():
         return {"error": "Missing seq_ids parameter"}, 400
     if len(entries) > 100:
         return {"error": "Too many seq_ids"}, 400
-    return [seqinfo90.get_seqinfo(e) for e in entries]
+    rs = []
+    for seq_id in entries:
+        tokens = seq_id.split(".")
+        if len(tokens) != 3:
+            return {"error": "Invalid sequence ID (only 'GMSC10' database supported)"}, 400
+        (db, cluster_level, seq_ix) = tokens
+        if db != 'GMSC10':
+            return {"error": "Invalid sequence ID"}, 400
+        if cluster_level != '90AA':
+            return {"error": "Invalid sequence ID: only 90AA identifiers can be used for seq-info-multi"}, 400
+        rs.append(seqinfo90.get_seqinfo(e))
 
 
 def parse_bool(s : str):
