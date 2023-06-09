@@ -192,6 +192,8 @@ def do_search(seqdata):
 def seq_search():
     now = datetime.now()
     seqdata = request.form.get('sequence_faa')
+    if seqdata is None:
+        return {"error": "Missing sequence_faa parameter"}, 400
     with search_lock:
         sid = next_search_id.get_next_id()
         searches[sid] = SearchObject(now, searcher.submit(do_search, seqdata))
