@@ -225,7 +225,7 @@ def seq_search_list():
     secret = environ.get('GMSC_API_INTERNAL_PWD', None)
     pwd = request.form.get('pwd')
     if secret is None:
-        return {"error": "Invalid search ID"}, 500
+        return {"error": "No secret set"}, 500
     if pwd != secret:
         return {"error": "Wrong password"}, 403
     def status_for(f):
