@@ -1,8 +1,8 @@
+import xz
 import pandas as pd
 import gzip
 import numpy as np
 from os import path
-from fasta_reader import IndexedFastaReader
 from fna2faa_gmsc import translate
 
 BASE_DIR = 'gmsc-db/'
@@ -13,6 +13,21 @@ def with_digits(prefix, n):
     n = f'{n:09}'
     return f'{prefix}.{n[:3]}_{n[3:6]}_{n[6:9]}'
 
+
+class IndexedFastaReader:
+    def __init__(self, ifile):
+        if ifile.endswith('.xz'):
+            self.seqfile = xz.open(ifile, 'rb')
+            ifile = ifile[:-len('.xz')]
+        else:
+            self.seqfile = open(ifile, 'rb')
+        self.sindex = np.load(ifile + '.starts.npy', mmap_mode='r')
+
+    def get(self, ix):
+        self.seqfile.seek(int(self.sindex[ix]))
+        data = self.seqfile.read(int(self.sindex[ix+1] - self.sindex[ix]))
+        _h, seq, _empty = data.split(b'\n')
+        return seq
 
 class SeqInfo:
     def __init__(self, database):
@@ -50,7 +65,7 @@ class SeqInfo:
         if db != self.database:
             raise IndexError(f'Only IDs for database "{self.database}" are accepted (got "{seq_id}"')
 
-        nuc = self.seqix.get(seq_id).decode('ascii')
+        nuc = self.seqix.get(ix).decode('ascii')
         return {
                 "seq_id": seq_id,
                 "nucleotide": nuc,
