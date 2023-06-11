@@ -4,7 +4,7 @@
 
 - `https://{{base_url}}/v1/seq-info/{{gmsc_id}}`
 
-Where {{gmsc_id}} is of the form `GMSC10.100AA.xxx_xxx_xxx` or `GMSC10.90AA.xxx_xxx_xxx`.
+Where {{gmsc\_id}} is of the form `GMSC10.100AA.xxx_xxx_xxx` or `GMSC10.90AA.xxx_xxx_xxx`.
 
 Returns
 
@@ -184,4 +184,11 @@ Results will look like one of the following
 
 Search ID are of the form `#-xxxx` where `#` is just an index counting up and
 `xxxx` is a random string.
+
+
+## Indexing
+
+Indexing is done by the `make-indices.py` [Jug](https://jug.readthedocs.io/)
+script. It expects FASTA and other files to be present in the `gsmc-db`
+subdirectory.
 
