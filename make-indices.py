@@ -29,6 +29,7 @@ def make_start_index(ifname):
             starts.append(cur)
             start += len(ch)
 
+    starts.append([start])
     starts = np.concatenate(starts)
 
     ofname = f'{ifname}.starts.npy'
