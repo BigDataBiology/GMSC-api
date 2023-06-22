@@ -80,11 +80,10 @@ def get_seq_filter():
     hq_only = request.form.get('hq_only', False)
     habitat = request.form.get('habitat')
     if habitat is None:
-        return {"status": "error", "msg": "Invalid habitat value"}, 400
+        habitat = ""
     taxonomy = request.form.get('taxonomy')
-    if taxonomy is not None :
-        if '__' not in taxonomy:
-            return {"status": "error", "msg": "Invalid taxonomy value"}, 400
+    if taxonomy is None:
+        taxonomy = ""
     results = seqinfo90.seq_filter(parse_bool(hq_only), habitat, taxonomy)
     return jsonify({
         "status": "Ok",
