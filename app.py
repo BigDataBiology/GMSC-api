@@ -175,12 +175,12 @@ def do_search(seqdata):
                  '--aa-genes', path.join(tdir, "seqs.faa"),
                  '-o', path.join(tdir, "output"),
                  '--threads', str(NR_THREADS_GMSC_MAPPER),
-                 '--db', f'{DB_DIR}/90AA_GMSC.dmnd',
-                 '--habitat', f'{DB_DIR}/90AA_habitat.npy',
-                 '--habitat-index', f'{DB_DIR}/90AA_ref_multi_general_habitat_index.tsv',
-                 '--quality', f'{DB_DIR}/90AA_highquality.txt.gz',
-                 '--taxonomy', f'{DB_DIR}/90AA_taxonomy.npy',
-                 '--taxonomy-index', f'{DB_DIR}/90AA_ref_taxonomy_index.tsv',
+                 '--db', f'{DB_DIR}/GMSC10.90AA.diamonddb.dmnd',
+                 '--habitat', f'{DB_DIR}/GMSC10.90AA.habitat.npy',
+                 '--habitat-index', f'{DB_DIR}/GMSC10.90AA.habitat.index.tsv',
+                 '--quality', f'{DB_DIR}/GMSC10.90AA.high_quality.tsv.xz',
+                 '--taxonomy', f'{DB_DIR}/GMSC10.90AA.taxonomy.npy',
+                 '--taxonomy-index', f'{DB_DIR}/GMSC10.90AA.taxonomy.index.tsv',
                  ],
                 )
 
