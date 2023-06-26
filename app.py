@@ -162,19 +162,20 @@ def parse_gmsc_mapper_results(basedir):
                     'pident': 'identity'},).to_dict('records')
     return result
 
-def do_search(seqdata):
+def do_search(seqdata, is_contigs):
     import tempfile
     import subprocess
     with tempfile.TemporaryDirectory() as tdir:
         if not path.exists(DB_DIR):
             sleep(10)
             return parse_gmsc_mapper_results('./demo_gmsc_mapper_output')
-        with open(path.join(tdir, "seqs.faa"), "w") as f:
+        fname = path.join(tdir, ('seqs.fna' if is_contigs else 'seqs.faa'))
+        with open(fname, "w") as f:
             f.write(seqdata)
         sleep(1)
         subprocess.check_call(
                 ['gmsc-mapper',
-                 '--aa-genes', path.join(tdir, "seqs.faa"),
+                 ('--input' if is_contigs else '--aa-genes'), fname,
                  '-o', path.join(tdir, "output"),
                  '--threads', str(NR_THREADS_GMSC_MAPPER),
                  '--db', f'{DB_DIR}/GMSC10.90AA.diamonddb.dmnd',
@@ -193,11 +194,12 @@ def do_search(seqdata):
 def seq_search():
     now = datetime.now()
     seqdata = request.form.get('sequence_faa')
+    is_contigs = parse_bool(request.form.get('is_contigs'))
     if seqdata is None:
         return {"error": "Missing sequence_faa parameter"}, 400
     with search_lock:
         sid = next_search_id.get_next_id()
-        searches[sid] = SearchObject(now, searcher.submit(do_search, seqdata))
+        searches[sid] = SearchObject(now, searcher.submit(do_search, seqdata, is_contigs))
     return jsonify({
         "search_id": sid,
         "status": "Ok",
@@ -209,10 +211,11 @@ def seq_search_results(search_id):
         return {"error": "Invalid search ID"}, 400
     sdata = searches[search_id].future
     if not sdata.done():
+        status = 'Running' if sdata.running() else 'Queued'
         sleep(1)
         return {
                 "search_id": search_id,
-                "status": 'Running' if sdata.running() else 'Queued'
+                "status": status,
                 }
     r = sdata.result()
     return jsonify({

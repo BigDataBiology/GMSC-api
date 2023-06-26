@@ -97,6 +97,7 @@ is made for endpoints marked `internal`. _You have been warned_.
 Arguments:
 
 - `sequence_faa`: FASTA formatted set of sequences
+- `is_contigs`: bool (when `True`, inputs are assumed to be DNA contigs)
 
 Returns
 
