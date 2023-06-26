@@ -43,7 +43,9 @@ Returns a list of entries like the outputs of `seq-info`.
 - `habitat`: str. _mandatory_
 - `taxonomy`: str. _optional_
 
-Both `habitat` and `taxonomy` are substring matches (_e.g._, passing `marine` will match `freshwater,marine,human gut`).
+`habitat` is treated as a comma separated list (_e.g._, you can use `marine,freshwater` to match all the entities that are present in both marine **and** freshwater).
+
+`taxonomy` is a substring match so you can pass any taxonomic level (_e.g._, passing `o__Pelagibacterales` will match `d__Bacteria;p__Proteobacteria;c__Alphaproteobacteria;o__Pelagibacterales;f__Pelagibacteraceae;g__AAA240-E13`).
 
 Returns
 

@@ -4,6 +4,8 @@ import gzip
 import numpy as np
 from os import path
 from fna2faa_gmsc import translate
+from typing import List
+
 
 BASE_DIR = 'gmsc-db/'
 MAX_THICK_RESULTS = 20
@@ -74,8 +76,14 @@ class SeqInfo:
                 'taxonomy': self.taxonomy.values[self.taxonomy_ix[ix]],
                 }
 
-    def seq_filter(self, hq_only, habitat_q, taxonomy_q):
-        matches = self.habitat.str.contains(habitat_q).values[self.habitat_ix]
+    def seq_filter(self, hq_only : bool, habitat_q : List[str], taxonomy_q : str):
+        if habitat_q:
+            habitat_r = self.habitat.str.contains(habitat_q[0]).values
+            for q in habitat_q[1:]:
+                habitat_r &= self.habitat.str.contains(q).values
+            matches = habitat_r[self.habitat_ix]
+        else:
+            matches = np.ones(len(self.habitat_ix), dtype=bool)
         if hq_only:
             matches &= self.is_hq
         if taxonomy_q is not None:

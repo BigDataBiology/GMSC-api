@@ -80,7 +80,9 @@ def get_seq_filter():
     hq_only = request.form.get('hq_only', False)
     habitat = request.form.get('habitat')
     if habitat is None:
-        habitat = ""
+        habitat = []
+    else:
+        habitat = habitat.split(",")
     taxonomy = request.form.get('taxonomy')
     if taxonomy is None:
         taxonomy = ""
