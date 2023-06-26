@@ -66,7 +66,7 @@ At most 1,001 entries are returned.
 
 - `https://{{base_url}}/v1/cluster-info/{{gmsc_90AA_id}}`
 
-Returns the membership of the given cluster. At most **20 results** are _thick_ (meaning that metadata is also returned. For the rest, only identifiers are returned. Example output
+Returns the membership of the given cluster. At most **20 results** are _thick_ (meaning that metadata is also returned). For the rest, only identifiers are returned. Example output
 
 ```json
 {
