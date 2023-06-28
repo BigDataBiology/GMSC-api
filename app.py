@@ -60,7 +60,8 @@ def get_seq_info_multi():
             return {"error": "Invalid sequence ID"}, 400
         if cluster_level != '90AA':
             return {"error": "Invalid sequence ID: only 90AA identifiers can be used for seq-info-multi"}, 400
-        rs.append(seqinfo90.get_seqinfo(e))
+        rs.append(seqinfo90.get_seqinfo(seq_id))
+    return rs
 
 
 def parse_bool(s : str):
