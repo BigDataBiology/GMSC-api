@@ -58,9 +58,12 @@ def get_seq_info_multi():
         (db, cluster_level, seq_ix) = tokens
         if db != 'GMSC10':
             return {"error": "Invalid sequence ID"}, 400
-        if cluster_level != '90AA':
-            return {"error": "Invalid sequence ID: only 90AA identifiers can be used for seq-info-multi"}, 400
-        rs.append(seqinfo90.get_seqinfo(seq_id))
+        if cluster_level == '90AA':
+            rs.append(seqinfo90.get_seqinfo(seq_id))
+        elif cluster_level == '100AA':
+            rs.append(seqinfo100.get_seqinfo(seq_id))
+        else:
+            return {"error": "Invalid sequence ID: does not match GMSC10 ID format"}, 400
     return rs
 
 
