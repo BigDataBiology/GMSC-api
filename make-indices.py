@@ -67,7 +67,7 @@ def make_cluster_index(sizes):
     import lzma
     import numpy as np
     total_n, max90aa = sizes
-    ix = np.zeros(max90aa + 1, dtype=np.uint64)
+    ix = np.zeros(max90aa + 2, dtype=np.uint64)
     data = np.zeros(total_n, dtype=np.uint64)
     prev = -1
     with lzma.open('gmsc-db/GMSC10.cluster.sorted2.tsv.xz', 'rt') as f:
@@ -79,6 +79,7 @@ def make_cluster_index(sizes):
                 ix[ix90] = cur100
                 prev = ix90
             data[cur100] = ix100
+    ix[-1] = len(data)
     np.save('gmsc-db/GMSC10.cluster.index.npy', ix)
     np.save('gmsc-db/GMSC10.cluster.data.npy', data)
 
