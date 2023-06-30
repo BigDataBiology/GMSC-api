@@ -7,6 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 from collections import namedtuple
 
 from seqinfo import SeqInfo, ClusterIx, with_digits
+from search import do_search, load_search_results
 
 NR_THREADS_GMSC_MAPPER = 2
 
@@ -121,8 +122,8 @@ def get_cluster_info(cluster_id):
 
 
 class SearchIDGenerator:
-    def __init__(self):
-        self.next_id = 0
+    def __init__(self, start):
+        self.next_id = start
     def get_next_id(self):
         import random
         from string import ascii_lowercase
@@ -138,59 +139,17 @@ class SearchIDGenerator:
     def get_cur_index(self) -> int:
         return self.next_id
 
-searches = {}
-next_search_id = SearchIDGenerator()
+def identity(x):
+    return x
+
 search_lock = threading.Lock()
 searcher = ThreadPoolExecutor(2)
 SearchObject = namedtuple("SearchObject", ["start_time", "future"])
+searches = {
+        k:SearchObject(datetime.now(), searcher.submit(identity, v)) for k,v in load_search_results().items()
+        }
 
-def parse_gmsc_mapper_results(basedir):
-    import pandas as pd
-    alignment = pd.read_table(f'{basedir}/alignment.out.smorfs.tsv', header=None)
-    habitat = pd.read_table(f'{basedir}/habitat.out.smorfs.tsv', index_col=0)
-    quality = pd.read_table(f'{basedir}/quality.out.smorfs.tsv', index_col=0)
-    taxonomy = pd.read_table(f'{basedir}/taxonomy.out.smorfs.tsv', index_col=0)
-    meta = pd.concat([habitat, quality, taxonomy], axis=1)
-    alignment.columns = 'qseqid,sseqid,full_qseq,full_sseq,qlen,slen,length,qstart,qend,sstart,send,bitscore,pident,evalue,qcovhsp,scovhsp'.split(',')
-
-    result = meta.to_dict('index')
-
-    for k in result.keys():
-        loc = alignment.query('qseqid == @k')
-        result[k]['aminoacid'] = loc.head(1).full_qseq.values[0]
-        result[k]['hits'] = \
-                loc[['sseqid', 'evalue', 'pident']].rename(columns=
-                    {'sseqid': 'id',
-                    'pident': 'identity'},).to_dict('records')
-    return result
-
-def do_search(seqdata, is_contigs):
-    import tempfile
-    import subprocess
-    with tempfile.TemporaryDirectory() as tdir:
-        if not path.exists(DB_DIR):
-            sleep(10)
-            return parse_gmsc_mapper_results('./demo_gmsc_mapper_output')
-        fname = path.join(tdir, ('seqs.fna' if is_contigs else 'seqs.faa'))
-        with open(fname, "w") as f:
-            f.write(seqdata)
-        sleep(1)
-        subprocess.check_call(
-                ['gmsc-mapper',
-                 ('--input' if is_contigs else '--aa-genes'), fname,
-                 '-o', path.join(tdir, "output"),
-                 '--threads', str(NR_THREADS_GMSC_MAPPER),
-                 '--db', f'{DB_DIR}/GMSC10.90AA.diamonddb.dmnd',
-                 '--habitat', f'{DB_DIR}/GMSC10.90AA.habitat.npy',
-                 '--habitat-index', f'{DB_DIR}/GMSC10.90AA.habitat.index.tsv',
-                 '--quality', f'{DB_DIR}/GMSC10.90AA.high_quality.tsv.xz',
-                 '--taxonomy', f'{DB_DIR}/GMSC10.90AA.taxonomy.npy',
-                 '--taxonomy-index', f'{DB_DIR}/GMSC10.90AA.taxonomy.index.tsv',
-                 ],
-                )
-
-        return parse_gmsc_mapper_results(path.join(tdir, "output"))
-
+next_search_id = SearchIDGenerator(len(searches))
 
 @app.post('/internal/seq-search/')
 def seq_search():
@@ -201,7 +160,7 @@ def seq_search():
         return {"error": "Missing sequence_faa parameter"}, 400
     with search_lock:
         sid = next_search_id.get_next_id()
-        searches[sid] = SearchObject(now, searcher.submit(do_search, seqdata, is_contigs))
+        searches[sid] = SearchObject(now, searcher.submit(do_search, seqdata, sid, is_contigs, NR_THREADS_GMSC_MAPPER))
     return jsonify({
         "search_id": sid,
         "status": "Ok",
