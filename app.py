@@ -5,7 +5,6 @@ import threading
 from time import sleep
 from concurrent.futures import ThreadPoolExecutor
 from collections import namedtuple
-from flask_cors import CORS
 
 from seqinfo import SeqInfo, ClusterIx, with_digits
 
@@ -24,7 +23,6 @@ else:
     IS_DEMO = True
 
 app = Flask('GMSC')
-CORS(app)
 
 
 @app.get("/v1/seq-info/<seq_id>")
