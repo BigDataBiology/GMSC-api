@@ -69,5 +69,7 @@ def do_search(seqdata, sid, is_contigs, nr_threads):
                  '--taxonomy-index', f'{DB_DIR}/GMSC10.90AA.taxonomy.index.tsv',
                  ],
                 )
-        return parse_gmsc_mapper_results(path.join(tdir, "output"))
+        r = parse_gmsc_mapper_results(path.join(tdir, "output"))
+        save_search_result(r, sid)
+        return r
 
