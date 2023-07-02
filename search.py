@@ -5,10 +5,13 @@ DB_DIR = 'gmsc-db'
 
 def parse_gmsc_mapper_results(basedir):
     import pandas as pd
-    alignment = pd.read_table(f'{basedir}/alignment.out.smorfs.tsv', header=None)
-    habitat = pd.read_table(f'{basedir}/habitat.out.smorfs.tsv', index_col=0)
-    quality = pd.read_table(f'{basedir}/quality.out.smorfs.tsv', index_col=0)
-    taxonomy = pd.read_table(f'{basedir}/taxonomy.out.smorfs.tsv', index_col=0)
+    try:
+        alignment = pd.read_table(f'{basedir}/alignment.out.smorfs.tsv', header=None)
+        habitat = pd.read_table(f'{basedir}/habitat.out.smorfs.tsv', index_col=0)
+        quality = pd.read_table(f'{basedir}/quality.out.smorfs.tsv', index_col=0)
+        taxonomy = pd.read_table(f'{basedir}/taxonomy.out.smorfs.tsv', index_col=0)
+    except pd.errors.EmptyDataError:
+        return {}
     meta = pd.concat([habitat, quality, taxonomy], axis=1)
     alignment.columns = 'qseqid,sseqid,full_qseq,full_sseq,qlen,slen,length,qstart,qend,sstart,send,bitscore,pident,evalue,qcovhsp,scovhsp'.split(',')
 
