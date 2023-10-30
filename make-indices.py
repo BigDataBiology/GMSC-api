@@ -83,6 +83,73 @@ def make_cluster_index(sizes):
     np.save('gmsc-db/GMSC10.cluster.index.npy', ix)
     np.save('gmsc-db/GMSC10.cluster.data.npy', data)
 
+@TaskGenerator
+def create_tax_index(infile,outfile1,outfile2):
+    import lzma
+    tax_set = set()
+    n = 0
+    with lzma.open(infile,'rt') as f:
+        for line in f:
+            linelist = line.strip().split('\t')
+            if len(linelist) == 2:
+                tax_set.add(linelist[1])
+            else:
+                tax_set.add('Unknown')
+            
+    tax_order = sorted(list(tax_set))
+    with open(outfile1,'wt') as out:
+        for item in tax_order:
+            out.write(f'{n}\t{item}\n')
+            n += 1
+    
+    tax_dict = {}
+    with open(outfile1,'rt') as f:
+        for line in f:
+            index,tax = line.strip().split('\t')
+            tax_dict[tax] = index
+
+    with open(outfile2,'wt') as out:
+        with lzma.open(infile,'rt') as f:
+            for line in f:
+                linelist = line.strip().split('\t')
+                if len(linelist) == 2:
+                    out.write(f'{linelist[0]}\t{tax_dict[linelist[1]]}\n')
+                else:
+                    out.write(f'{linelist[0]}\t0\n')
+
+@TaskGenerator
+def create_habitat_index(infile,outfile1,outfile2):
+    import lzma
+    habitat_set = set()
+    n = 0
+    with lzma.open(infile,'rt') as f:
+        for line in f:
+            smorf,habitat = line.strip().split('\t')
+            habitat_set.add(habitat)
+    habitat_order = sorted(list(habitat_set))
+    with open(outfile1,'wt') as out:
+        for item in habitat_order:
+            out.write(f'{n}\t{item}\n')
+            n += 1
+
+    habitat_dict = {}
+    with open(outfile1,'rt') as f:
+        for line in f:
+            index,habitat = line.strip().split('\t')
+            habitat_dict[habitat] = index
+
+    with open(outfile2,'wt') as out:
+        with lzma.open(infile,'rt') as f:
+            for line in f:
+                smorf,habitat = line.strip().split('\t')
+                out.write(f'{smorf}\t{habitat_dict[habitat]}\n')
+
+@TaskGenerator
+def create_tax_habitat_npy(infile,outfile):
+    import numpy as np
+    df = np.loadtxt(infile,dtype=int, usecols=(1))
+    np.save(outfile,df)
+
 make_start_index('gmsc-db/GMSC10.100AA.fna.xz')
 make_start_index('gmsc-db/GMSC10.90AA.fna')
 
@@ -90,3 +157,14 @@ make_start_index('gmsc-db/GMSC10.90AA.fna')
 sizes = get_cluster_sizes()
 make_cluster_index(sizes)
 
+create_tax_index('gmsc-db/GMSC10.100AA.taxonomy.tsv.xz','gmsc-db/GMSC10.100AA.taxonomy.index.tsv','gmsc-db/GMSC10.100AA.taxonomy.idx.tsv')
+create_tax_habitat_npy('gmsc-db/GMSC10.100AA.taxonomy.idx.tsv','gmsc-db/GMSC10.100AA.taxonomy.npy')
+
+create_tax_index('gmsc-db/GMSC10.90AA.taxonomy.tsv.xz','gmsc-db/GMSC10.90AA.taxonomy.index.tsv','gmsc-db/GMSC10.90AA.taxonomy.idx.tsv')
+create_tax_habitat_npy('gmsc-db/GMSC10.90AA.taxonomy.idx.tsv','gmsc-db/GMSC10.90AA.taxonomy.npy')
+
+create_habitat_index('gmsc-db/GMSC10.100AA.general_habitat.tsv.xz','gmsc-db/GMSC10.100AA.habitat.index.tsv','gmsc-db/GMSC10.100AA.habitat.idx.tsv')
+create_tax_habitat_npy('GMSC10.100AA.habitat.idx.tsv','gmsc-db/GMSC10.100AA.habitat.npy')
+
+create_habitat_index('gmsc-db/GMSC10.90AA.general_habitat.tsv.xz','gmsc-db/GMSC10.90AA.habitat.index.tsv','gmsc-db/GMSC10.90AA.habitat.idx.tsv')
+create_tax_habitat_npy('GMSC10.90AA.habitat.idx.tsv','gmsc-db/GMSC10.90AA.habitat.npy')
