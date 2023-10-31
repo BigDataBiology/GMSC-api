@@ -87,7 +87,7 @@ def make_cluster_index(sizes):
 def create_tax_index(infile,outfile1,outfile2):
     import lzma
     tax_set = set()
-    n = 0
+
     with lzma.open(infile,'rt') as f:
         for line in f:
             linelist = line.strip().split('\t')
@@ -97,16 +97,12 @@ def create_tax_index(infile,outfile1,outfile2):
                 tax_set.add('Unknown')
             
     tax_order = sorted(list(tax_set))
-    with open(outfile1,'wt') as out:
-        for item in tax_order:
-            out.write(f'{n}\t{item}\n')
-            n += 1
-    
     tax_dict = {}
-    with open(outfile1,'rt') as f:
-        for line in f:
-            index,tax = line.strip().split('\t')
-            tax_dict[tax] = index
+    
+    with open(outfile1,'wt') as out:
+        for n,item in enumerate(tax_order):
+            tax_dict[item] = n
+            out.write(f'{n}\t{item}\n')
 
     with open(outfile2,'wt') as out:
         with lzma.open(infile,'rt') as f:
@@ -121,22 +117,19 @@ def create_tax_index(infile,outfile1,outfile2):
 def create_habitat_index(infile,outfile1,outfile2):
     import lzma
     habitat_set = set()
-    n = 0
+
     with lzma.open(infile,'rt') as f:
         for line in f:
             smorf,habitat = line.strip().split('\t')
             habitat_set.add(habitat)
-    habitat_order = sorted(list(habitat_set))
-    with open(outfile1,'wt') as out:
-        for item in habitat_order:
-            out.write(f'{n}\t{item}\n')
-            n += 1
 
+    habitat_order = sorted(list(habitat_set))
     habitat_dict = {}
-    with open(outfile1,'rt') as f:
-        for line in f:
-            index,habitat = line.strip().split('\t')
-            habitat_dict[habitat] = index
+
+    with open(outfile1,'wt') as out:
+        for n,item in enumerate(habitat_order):
+            habitat_dict[item] = n
+            out.write(f'{n}\t{item}\n')
 
     with open(outfile2,'wt') as out:
         with lzma.open(infile,'rt') as f:
