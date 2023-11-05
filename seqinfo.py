@@ -1,6 +1,7 @@
 import xz
 import pandas as pd
 import gzip
+import lzma
 import numpy as np
 from os import path
 from fna2faa_gmsc import translate
@@ -41,21 +42,21 @@ class SeqInfo:
                 else f'{BASE_DIR}/GMSC10.{database}.fna.xz'
                 )
         self.database = database
-        self.habitat = pd.read_table(f'{BASE_DIR}/{database}_ref_multi_general_habitat_index.tsv',
+        self.habitat = pd.read_table(f'{BASE_DIR}/GMSC10.{database}.habitat.index.tsv',
                                     index_col=0,
                                     header=None,
                                     names=['seq_ix', 'habitat']
                                     ).squeeze()
-        self.habitat_ix = np.load(f'{BASE_DIR}/{database}_habitat.npy', mmap_mode='r')
-
-        self.taxonomy = pd.read_table(f'{BASE_DIR}/{database}_ref_taxonomy_index.tsv',
+        self.habitat_ix = np.load(f'{BASE_DIR}/GMSC10.{database}.habitat.npy', mmap_mode='r')
+        
+        self.taxonomy = pd.read_table(f'{BASE_DIR}/GMSC10.{database}.taxonomy.index.tsv',
                                     index_col=0,
                                     header=None,
                                     names=['seq_ix', 'taxonomy']
                                     ).squeeze()
-        self.taxonomy_ix = np.load(f'{BASE_DIR}/{database}_taxonomy.npy', mmap_mode='r')
+        self.taxonomy_ix = np.load(f'{BASE_DIR}/GMSC10.{database}.taxonomy.npy', mmap_mode='r')
 
-        hqs = [line.strip() for line in gzip.open(f'{BASE_DIR}/90AA_highquality.txt.gz', 'rt')]
+        hqs = [line.strip() for line in lzma.open(f'{BASE_DIR}/GMSC10.90AA.high_quality.tsv.xz', 'rt')]
         hq_ixs = [int(hq.split('.')[2]) for hq in hqs]
         self.is_hq = np.zeros(len(self.habitat_ix), dtype=bool)
         self.is_hq[list(hq_ixs)] = True
