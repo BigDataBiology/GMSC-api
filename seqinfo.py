@@ -8,6 +8,7 @@ from typing import List
 
 
 BASE_DIR = 'gmsc-db/'
+INDEX_DIR = 'gmsc-db-index/'
 MAX_THICK_RESULTS = 20
 MAX_TOTAL_RESULTS = 1000
 
@@ -41,19 +42,19 @@ class SeqInfo:
                 else f'{BASE_DIR}/GMSC10.{database}.fna.xz'
                 )
         self.database = database
-        self.habitat = pd.read_table(f'{BASE_DIR}/{database}_ref_multi_general_habitat_index.tsv',
+        self.habitat = pd.read_table(f'{INDEX_DIR}/GMSC10.{database}.general_habitat.index.tsv',
                                     index_col=0,
                                     header=None,
                                     names=['seq_ix', 'habitat']
                                     ).squeeze()
-        self.habitat_ix = np.load(f'{BASE_DIR}/{database}_habitat.npy', mmap_mode='r')
+        self.habitat_ix = np.load(f'{INDEX_DIR}/GMSC10.{database}.general_habitat.npy', mmap_mode='r')
 
-        self.taxonomy = pd.read_table(f'{BASE_DIR}/{database}_ref_taxonomy_index.tsv',
+        self.taxonomy = pd.read_table(f'{INDEX_DIR}/GMSC10.{database}.taxonomy.index.tsv',
                                     index_col=0,
                                     header=None,
                                     names=['seq_ix', 'taxonomy']
                                     ).squeeze()
-        self.taxonomy_ix = np.load(f'{BASE_DIR}/{database}_taxonomy.npy', mmap_mode='r')
+        self.taxonomy_ix = np.load(f'{INDEX_DIR}/GMSC10.{database}.taxonomy.npy', mmap_mode='r')
 
         hqs = [line.strip() for line in gzip.open(f'{BASE_DIR}/90AA_highquality.txt.gz', 'rt')]
         hq_ixs = [int(hq.split('.')[2]) for hq in hqs]
@@ -103,8 +104,8 @@ class SeqInfo:
 
 class ClusterIx:
     def __init__(self):
-        self.ix = np.load('gmsc-db/GMSC10.cluster.index.npy', mmap_mode='r')
-        self.data = np.load('gmsc-db/GMSC10.cluster.data.npy', mmap_mode='r')
+        self.ix = np.load(f'{INDEX_DIR}/GMSC10.cluster.index.npy', mmap_mode='r')
+        self.data = np.load(f'{INDEX_DIR}/GMSC10.cluster.data.npy', mmap_mode='r')
 
     def get_cluster_members(self, n : int):
         return self.data[self.ix[n]:self.ix[n+1]]

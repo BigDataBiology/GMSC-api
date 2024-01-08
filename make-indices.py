@@ -6,9 +6,10 @@ except ImportError:
     sys.stderr.write('Please install it.\n')
     raise
 
+from os import path
 
 @TaskGenerator
-def make_start_index(ifname):
+def make_start_index(ifname, index_dir):
     import numpy as np
     import lzma
     CHUNK_SIZE = 1_000_000
@@ -32,7 +33,7 @@ def make_start_index(ifname):
     starts.append([start])
     starts = np.concatenate(starts)
 
-    ofname = f'{ifname}.starts.npy'
+    ofname = f'{index_dir}/{path.basename(ifname)}.starts.npy'
     np.save(ofname, starts)
     return ofname
 
@@ -63,7 +64,7 @@ def get_cluster_sizes():
     return total_n, max_90aa
 
 @TaskGenerator
-def make_cluster_index(sizes):
+def make_cluster_index(sizes, index_dir):
     import lzma
     import numpy as np
     total_n, max90aa = sizes
@@ -80,11 +81,17 @@ def make_cluster_index(sizes):
                 prev = ix90
             data[cur100] = ix100
     ix[-1] = len(data)
-    np.save('gmsc-db/GMSC10.cluster.index.npy', ix)
-    np.save('gmsc-db/GMSC10.cluster.data.npy', data)
+    np.save(f'{index_dir}/GMSC10.cluster.index.npy', ix)
+    np.save(f'{index_dir}/GMSC10.cluster.data.npy', data)
+
+def convert_to_npy(infile):
+    import numpy as np
+    outfile = infile[:-len('.idx.tsv')] + '.npy'
+    df = np.loadtxt(infile, dtype=int, usecols=1)
+    np.save(outfile, df)
 
 @TaskGenerator
-def create_tax_index(infile,outfile1,outfile2):
+def create_tax_index(infile, index_dir):
     import lzma
     tax_set = set()
 
@@ -95,10 +102,15 @@ def create_tax_index(infile,outfile1,outfile2):
                 tax_set.add(linelist[1])
             else:
                 tax_set.add('Unknown')
-            
+
     tax_order = sorted(list(tax_set))
     tax_dict = {}
-    
+
+    assert infile.endswith('.tsv.xz')
+    basename = path.basename(infile)[:-len('.tsv.xz')]
+    outfile1 = f'{index_dir}/{basename}.index.tsv'
+    outfile2 = f'{index_dir}/{basename}.idx.tsv'
+
     with open(outfile1,'wt') as out:
         for n,item in enumerate(tax_order):
             tax_dict[item] = n
@@ -112,9 +124,11 @@ def create_tax_index(infile,outfile1,outfile2):
                     out.write(f'{linelist[0]}\t{tax_dict[linelist[1]]}\n')
                 else:
                     out.write(f'{linelist[0]}\t0\n')
+    convert_to_npy(outfile2)
+    return outfile2
 
 @TaskGenerator
-def create_habitat_index(infile,outfile1,outfile2):
+def create_habitat_index(infile, index_dir):
     import lzma
     habitat_set = set()
 
@@ -126,6 +140,11 @@ def create_habitat_index(infile,outfile1,outfile2):
     habitat_order = sorted(list(habitat_set))
     habitat_dict = {}
 
+    assert infile.endswith('.tsv.xz')
+    basename = path.basename(infile)[:-len('.tsv.xz')]
+    outfile1 = f'{index_dir}/{basename}.index.tsv'
+    outfile2 = f'{index_dir}/{basename}.idx.tsv'
+
     with open(outfile1,'wt') as out:
         for n,item in enumerate(habitat_order):
             habitat_dict[item] = n
@@ -136,28 +155,22 @@ def create_habitat_index(infile,outfile1,outfile2):
             for line in f:
                 smorf,habitat = line.strip().split('\t')
                 out.write(f'{smorf}\t{habitat_dict[habitat]}\n')
+    convert_to_npy(outfile2)
+    return outfile2
 
-@TaskGenerator
-def create_tax_habitat_npy(infile,outfile):
-    import numpy as np
-    df = np.loadtxt(infile,dtype=int, usecols=(1))
-    np.save(outfile,df)
 
-make_start_index('gmsc-db/GMSC10.100AA.fna.xz')
-make_start_index('gmsc-db/GMSC10.90AA.fna')
+INDEX_DIRECTORY = 'gmsc-db-index'
+
+make_start_index('gmsc-db/GMSC10.100AA.fna.xz', INDEX_DIRECTORY)
+make_start_index('gmsc-db/GMSC10.90AA.fna.xz', INDEX_DIRECTORY)
 
 
 sizes = get_cluster_sizes()
-make_cluster_index(sizes)
+make_cluster_index(sizes, INDEX_DIRECTORY)
 
-create_tax_index('gmsc-db/GMSC10.100AA.taxonomy.tsv.xz','gmsc-db/GMSC10.100AA.taxonomy.index.tsv','gmsc-db/GMSC10.100AA.taxonomy.idx.tsv')
-create_tax_habitat_npy('gmsc-db/GMSC10.100AA.taxonomy.idx.tsv','gmsc-db/GMSC10.100AA.taxonomy.npy')
 
-create_tax_index('gmsc-db/GMSC10.90AA.taxonomy.tsv.xz','gmsc-db/GMSC10.90AA.taxonomy.index.tsv','gmsc-db/GMSC10.90AA.taxonomy.idx.tsv')
-create_tax_habitat_npy('gmsc-db/GMSC10.90AA.taxonomy.idx.tsv','gmsc-db/GMSC10.90AA.taxonomy.npy')
+create_tax_index('gmsc-db/GMSC10.100AA.taxonomy.tsv.xz', INDEX_DIRECTORY)
+create_tax_index('gmsc-db/GMSC10.90AA.taxonomy.tsv.xz', INDEX_DIRECTORY)
 
-create_habitat_index('gmsc-db/GMSC10.100AA.general_habitat.tsv.xz','gmsc-db/GMSC10.100AA.habitat.index.tsv','gmsc-db/GMSC10.100AA.habitat.idx.tsv')
-create_tax_habitat_npy('GMSC10.100AA.habitat.idx.tsv','gmsc-db/GMSC10.100AA.habitat.npy')
-
-create_habitat_index('gmsc-db/GMSC10.90AA.general_habitat.tsv.xz','gmsc-db/GMSC10.90AA.habitat.index.tsv','gmsc-db/GMSC10.90AA.habitat.idx.tsv')
-create_tax_habitat_npy('GMSC10.90AA.habitat.idx.tsv','gmsc-db/GMSC10.90AA.habitat.npy')
+create_habitat_index('gmsc-db/GMSC10.100AA.general_habitat.tsv.xz', INDEX_DIRECTORY)
+create_habitat_index('gmsc-db/GMSC10.90AA.general_habitat.tsv.xz', INDEX_DIRECTORY)
