@@ -93,10 +93,14 @@ def convert_to_npy(infile):
 @TaskGenerator
 def create_tax_index(infile, index_dir):
     import lzma
+    import numpy as np
+
     tax_set = set()
 
+    nr_lines = 0
     with lzma.open(infile,'rt') as f:
         for line in f:
+            nr_lines += 1
             linelist = line.strip().split('\t')
             if len(linelist) == 2:
                 tax_set.add(linelist[1])
@@ -109,22 +113,20 @@ def create_tax_index(infile, index_dir):
     assert infile.endswith('.tsv.xz')
     basename = path.basename(infile)[:-len('.tsv.xz')]
     outfile1 = f'{index_dir}/{basename}.index.tsv'
-    outfile2 = f'{index_dir}/{basename}.idx.tsv'
+    outfile2 = f'{index_dir}/{basename}.npy'
 
     with open(outfile1,'wt') as out:
         for n,item in enumerate(tax_order):
             tax_dict[item] = n
             out.write(f'{n}\t{item}\n')
 
-    with open(outfile2,'wt') as out:
-        with lzma.open(infile,'rt') as f:
-            for line in f:
-                linelist = line.strip().split('\t')
-                if len(linelist) == 2:
-                    out.write(f'{linelist[0]}\t{tax_dict[linelist[1]]}\n')
-                else:
-                    out.write(f'{linelist[0]}\t0\n')
-    convert_to_npy(outfile2)
+    odata = np.zeros(nr_lines, int)
+    with lzma.open(infile,'rt') as f:
+        for ix,line in enumerate(f):
+            tokens = line.strip().split('\t')
+            if len(tokens) == 2:
+                odata[ix] = tax_dict[tokens[1]]
+    np.save(outfile2, odata)
     return outfile2
 
 @TaskGenerator
