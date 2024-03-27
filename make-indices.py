@@ -145,7 +145,7 @@ def create_habitat_index(infile, index_dir):
     assert infile.endswith('.tsv.xz')
     basename = path.basename(infile)[:-len('.tsv.xz')]
     outfile1 = f'{index_dir}/{basename}.index.tsv'
-    outfile2 = f'{index_dir}/{basename}.idx.tsv'
+    outfile2 = f'{index_dir}/{basename}.npy'
 
     with open(outfile1,'wt') as out:
         for n,item in enumerate(habitat_order):
