@@ -84,34 +84,28 @@ def make_cluster_index(sizes, index_dir):
     np.save(f'{index_dir}/GMSC10.cluster.index.npy', ix)
     np.save(f'{index_dir}/GMSC10.cluster.data.npy', data)
 
-def convert_to_npy(infile):
-    import numpy as np
-    outfile = infile[:-len('.idx.tsv')] + '.npy'
-    df = np.loadtxt(infile, dtype=int, usecols=1)
-    np.save(outfile, df)
 
 @TaskGenerator
-def create_tax_index(infile, index_dir):
+def create_index(infile, index_dir, tag, col_ix):
     import lzma
     import numpy as np
+    import pandas as pd
+    from os import path
 
     tax_set = set()
 
     nr_lines = 0
-    with lzma.open(infile,'rt') as f:
-        for line in f:
-            nr_lines += 1
-            linelist = line.strip().split('\t')
-            if len(linelist) == 2:
-                tax_set.add(linelist[1])
-            else:
-                tax_set.add('Unknown')
-
+    for ch in pd.read_table(infile, header=None, chunksize=1_000_000, usecols=[col_ix]):
+        ch = ch[col_ix]
+        tax_set.update(ch.fillna('Unknown'))
+        nr_lines += len(ch)
+        print(f'Processed {nr_lines//1_000_000}m')
+    print(f'Finished reading in taxa set ({len(tax_set)} elements)')
     tax_order = sorted(list(tax_set))
     tax_dict = {}
 
     assert infile.endswith('.tsv.xz')
-    basename = path.basename(infile)[:-len('.tsv.xz')]
+    basename = path.basename(infile)[:-len('.tsv.xz')].replace('annotation', tag)
     outfile1 = f'{index_dir}/{basename}.index.tsv'
     outfile2 = f'{index_dir}/{basename}.npy'
 
@@ -124,42 +118,11 @@ def create_tax_index(infile, index_dir):
     with lzma.open(infile,'rt') as f:
         for ix,line in enumerate(f):
             tokens = line.strip().split('\t')
-            if len(tokens) == 2:
-                odata[ix] = tax_dict[tokens[1]]
+            cur = tokens[col_ix]
+            if cur:
+                odata[ix] = tax_dict[cur]
     np.save(outfile2, odata)
     return outfile2
-
-@TaskGenerator
-def create_habitat_index(infile, index_dir):
-    import lzma
-    habitat_set = set()
-
-    with lzma.open(infile,'rt') as f:
-        for line in f:
-            smorf,habitat = line.strip().split('\t')
-            habitat_set.add(habitat)
-
-    habitat_order = sorted(list(habitat_set))
-    habitat_dict = {}
-
-    assert infile.endswith('.tsv.xz')
-    basename = path.basename(infile)[:-len('.tsv.xz')]
-    outfile1 = f'{index_dir}/{basename}.index.tsv'
-    outfile2 = f'{index_dir}/{basename}.npy'
-
-    with open(outfile1,'wt') as out:
-        for n,item in enumerate(habitat_order):
-            habitat_dict[item] = n
-            out.write(f'{n}\t{item}\n')
-
-    with open(outfile2,'wt') as out:
-        with lzma.open(infile,'rt') as f:
-            for line in f:
-                smorf,habitat = line.strip().split('\t')
-                out.write(f'{smorf}\t{habitat_dict[habitat]}\n')
-    convert_to_npy(outfile2)
-    return outfile2
-
 
 INDEX_DIRECTORY = 'gmsc-db-index'
 
@@ -171,8 +134,8 @@ sizes = get_cluster_sizes()
 make_cluster_index(sizes, INDEX_DIRECTORY)
 
 
-create_tax_index('gmsc-db/GMSC10.100AA.taxonomy.tsv.xz', INDEX_DIRECTORY)
-create_tax_index('gmsc-db/GMSC10.90AA.taxonomy.tsv.xz', INDEX_DIRECTORY)
+create_index('gmsc-db/GMSC10.100AA.annotation.tsv.xz', INDEX_DIRECTORY, 'general_habitat', 0)
+create_index( 'gmsc-db/GMSC10.90AA.annotation.tsv.xz', INDEX_DIRECTORY, 'general_habitat', 0)
 
-create_habitat_index('gmsc-db/GMSC10.100AA.general_habitat.tsv.xz', INDEX_DIRECTORY)
-create_habitat_index('gmsc-db/GMSC10.90AA.general_habitat.tsv.xz', INDEX_DIRECTORY)
+create_index('gmsc-db/GMSC10.100AA.annotation.tsv.xz', INDEX_DIRECTORY, 'taxonomy', 1)
+create_index( 'gmsc-db/GMSC10.90AA.annotation.tsv.xz', INDEX_DIRECTORY, 'taxonomy', 1)

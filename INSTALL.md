@@ -14,3 +14,9 @@ conda install -c default -c conda-forge flask numpy pandas jug requests
 jug execute download-data.py
 ```
 
+## Create indices
+
+```bash
+jug execute make-indices.py
+```
+
