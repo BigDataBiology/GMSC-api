@@ -94,6 +94,20 @@ def create_90aa(fna_file, sel90):
     os.unlink(tmp_file+'.sorted')
     return oname
 
+@TaskGenerator
+def fna2faa(fna):
+    import subprocess
+    assert fna.endswith('.fna')
+    faa = fna[:-len('.fna')]+'.faa'
+    with open(fna, 'rb') as ifile:
+        with open(faa, 'wb') as ofile:
+            subprocess.check_call(
+                    ['python', f'{INDEX_DIR}/fna2faa_gmsc.py'],
+                    stdin=ifile,
+                    stdout=ofile,
+                    )
+    return faa
+
 download_file_if_needed('GMSC10.cluster.sorted2.tsv.xz')
 download_file_if_needed('fna2faa_gmsc.py')
 download_file_if_needed('GMSC10.100AA.annotation.tsv.xz')
@@ -103,3 +117,5 @@ fna90 = create_90aa(
         download_file_if_needed('GMSC10.90AA.txt.xz'),
         )
 jug_execute(['xz', '--threads=0', '--keep', fna90])
+faa90 = fna2faa(fna90)
+jug_execute(['diamond', 'makedb', '--db', f'{INDEX_DIR}/GMSC10.90AA.diamonddb.dmnd', '--in', faa90])
