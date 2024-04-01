@@ -56,7 +56,7 @@ class SeqInfo:
                                     ).squeeze()
         self.taxonomy_ix = np.load(f'{INDEX_DIR}/GMSC10.{database}.taxonomy.npy', mmap_mode='r')
 
-        hqs = [line.strip() for line in gzip.open(f'{BASE_DIR}/90AA_highquality.txt.gz', 'rt')]
+        hqs = [line.strip() for line in xz.open(f'{BASE_DIR}/GMSC10.90AA.high_quality.tsv.xz', 'rt')]
         hq_ixs = [int(hq.split('.')[2]) for hq in hqs]
         self.is_hq = np.zeros(len(self.habitat_ix), dtype=bool)
         self.is_hq[list(hq_ixs)] = True
