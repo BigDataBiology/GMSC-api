@@ -24,7 +24,7 @@ class IndexedFastaReader:
             ifile = ifile[:-len('.xz')]
         else:
             self.seqfile = open(ifile, 'rb')
-        self.sindex = np.load(ifile + '.starts.npy', mmap_mode='r')
+        self.sindex = np.load(ifile.replace(BASE_DIR, INDEX_DIR) + '.starts.npy', mmap_mode='r')
 
     def get(self, ix):
         self.seqfile.seek(int(self.sindex[ix]))
