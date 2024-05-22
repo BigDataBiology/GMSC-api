@@ -124,6 +124,65 @@ def create_index(infile, index_dir, tag, col_ix):
     np.save(outfile2, odata)
     return outfile2
 
+@TaskGenerator
+def create_hq_list(ifile, index_dir):
+    import pandas as pd
+    import numpy as np
+    import lzma
+    oname = ifile.split('/')[-1].replace('.quality_test.tsv.xz', '.high_quality_ix.npy')
+    oname = f'{index_dir}/{oname}'
+    indices = []
+    #for ch in pd.read_table(ifile, header=None, chunksize=1_000_000):
+    for ch in pd.read_table(ifile,chunksize=1_000_000):
+        ch = ch.dropna()
+        ch.columns = ['antifam', 'terminal', 'rnacode', 'metat', 'riboseq', 'metap']
+        hq = ch.\
+                query("(antifam == 'T') & (terminal == 'T') & (rnacode<0.05) & ((metat>1) | (riboseq>1) | (metap >= 0.5))")
+        indices.extend(hq.index)
+    indices = np.array(indices, dtype=np.uint64)
+    np.save(oname, indices)
+    return oname
+
+
+@TaskGenerator
+def quality_tests_as_parquet(ifile, index_dir):
+    import lzma
+    import polars as pl
+    import tempfile
+    import pathlib
+    assert ifile.endswith('.tsv.xz')
+    ifile = pathlib.PurePath(ifile)
+    oname = f'{index_dir}/{ifile.stem.replace("tsv", "parquet")}'
+    with tempfile.TemporaryDirectory() as tmpdir:
+        uncompressed = f'{tmpdir}/{ifile.stem}'
+        with lzma.open(ifile, 'rb') as f:
+            with open(uncompressed, 'wb') as out:
+                while ch := f.read(8192):
+                    out.write(ch)
+        s = pl.read_csv(uncompressed,
+                    separator='\t',
+                    dtypes={'rnacode' : pl.Float32,
+                            'riboseq' : pl.Int32,
+                            'metat' : pl.Int32,
+                            'metap' : pl.Float32
+                            },
+                    null_values=['NA'],
+                    has_header=False,
+                    new_columns=['antifam',
+                                 'terminal',
+                                 'rnacode',
+                                 'metat',
+                                 'riboseq',
+                                 'metap'])
+        s = s.with_columns([
+          pl.col('antifam') == 'T',
+          pl.col('terminal') == 'T',
+          pl.col('rnacode').fill_null(2)
+          ])
+        s.write_parquet(oname,
+                        compression='lz4')
+        return oname
+
 INDEX_DIRECTORY = 'gmsc-db-index'
 
 make_start_index('gmsc-db/GMSC10.100AA.fna.xz', INDEX_DIRECTORY)
@@ -139,3 +198,8 @@ create_index( 'gmsc-db/GMSC10.90AA.annotation.tsv.xz', INDEX_DIRECTORY, 'general
 
 create_index('gmsc-db/GMSC10.100AA.annotation.tsv.xz', INDEX_DIRECTORY, 'taxonomy', 1)
 create_index( 'gmsc-db/GMSC10.90AA.annotation.tsv.xz', INDEX_DIRECTORY, 'taxonomy', 1)
+
+create_hq_list('gmsc-db/GMSC10.90AA.quality_test.tsv.xz', INDEX_DIRECTORY)
+
+quality_tests_as_parquet('gmsc-db/GMSC10.90AA.quality_test.tsv.xz',
+                         INDEX_DIRECTORY)

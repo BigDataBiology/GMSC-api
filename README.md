@@ -39,9 +39,15 @@ Returns a list of entries like the outputs of `seq-info`.
 
 `POST` endpoint, with arguments:
 
-- `hq_only`: boolean. Currently must be `true`
+- `hq_only`: boolean. _optional_ (only active for 90AA)
 - `habitat`: str. _mandatory_
 - `taxonomy`: str. _optional_
+- `quality_antifam`: boolean. _optional_
+- `quality_terminal`: boolean. _optional_
+- `quality_rnacode`: float. _optional_
+- `quality_metat`: integer. _optional_
+- `quality_metap`: integer. _optional_
+- `quality_riboseq`: float. _optional_
 
 `habitat` is treated as a comma separated list (_e.g._, you can use `marine,freshwater` to match all the entities that are present in both marine **and** freshwater).
 

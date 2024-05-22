@@ -66,9 +66,22 @@ def get_seq_info_multi():
     return rs
 
 
-def parse_bool(s : str):
+def float_or_None(s : str) -> float:
+    if s is None or s == '':
+        return None
+    return float(s)
+
+
+def int_or_None(s : str) -> int:
+    if s is None or s == '':
+        return None
+    return int(s)
+
+def parse_bool(s : str, None_is_false : bool = False) -> bool:
     if s is None:
-        return False
+        if None_is_false:
+            return False
+        return None
     if s in (True, False):
         return s
     s = s.lower()
@@ -89,7 +102,17 @@ def get_seq_filter():
     taxonomy = request.form.get('taxonomy')
     if taxonomy is None:
         taxonomy = ""
-    results = seqinfo90.seq_filter(parse_bool(hq_only), habitat, taxonomy)
+    results = seqinfo90.seq_filter(
+                            parse_bool(hq_only, None_is_false=True),
+                            habitat,
+                            taxonomy,
+                            quality_antifam=parse_bool(request.form.get('quality_antifam')),
+                            quality_terminal=parse_bool(request.form.get('quality_terminal')),
+                            quality_rnacode=float_or_None(request.form.get('quality_rnacode')),
+                            quality_metap=int_or_None(request.form.get('quality_metap')),
+                            quality_metat=int_or_None(request.form.get('quality_metat')),
+                            quality_riboseq=float_or_None(request.form.get('quality_riboseq')),
+                            )
     return jsonify({
         "status": "Ok",
         "results": results,
@@ -155,7 +178,7 @@ next_search_id = SearchIDGenerator(len(searches))
 def seq_search():
     now = datetime.now()
     seqdata = request.form.get('sequence_faa')
-    is_contigs = parse_bool(request.form.get('is_contigs'))
+    is_contigs = parse_bool(request.form.get('is_contigs'), None_is_false=True)
     if seqdata is None:
         return {"error": "Missing sequence_faa parameter"}, 400
     with search_lock:

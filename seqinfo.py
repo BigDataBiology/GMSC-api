@@ -1,10 +1,12 @@
 import xz
+import polars as pl
 import pandas as pd
+
 import gzip
 import numpy as np
 from os import path
 from fna2faa_gmsc import translate
-from typing import List
+from typing import List, Optional
 
 
 BASE_DIR = 'gmsc-db/'
@@ -56,10 +58,15 @@ class SeqInfo:
                                     ).squeeze()
         self.taxonomy_ix = np.load(f'{INDEX_DIR}/GMSC10.{database}.taxonomy.npy', mmap_mode='r')
 
-        hqs = [line.strip() for line in xz.open(f'{BASE_DIR}/GMSC10.90AA.high_quality.tsv.xz', 'rt')]
-        hq_ixs = [int(hq.split('.')[2]) for hq in hqs]
-        self.is_hq = np.zeros(len(self.habitat_ix), dtype=bool)
-        self.is_hq[list(hq_ixs)] = True
+        self.quality_metrics = None
+        if path.exists(f'{INDEX_DIR}/GMSC10.{database}.quality_test.parquet'):
+            self.quality_metrics = pl.read_parquet(f'{INDEX_DIR}/GMSC10.{database}.quality_test.parquet')
+
+        self.is_hq = None
+        if path.exists(f'{INDEX_DIR}/GMSC10.{database}.high_quality_ix.npy'):
+            hq_ixs = np.load(f'{INDEX_DIR}/GMSC10.{database}.high_quality_ix.npy', mmap_mode='r')
+            self.is_hq = np.zeros(len(self.habitat_ix), dtype=bool)
+            self.is_hq[hq_ixs] = True
 
 
     def get_seqinfo(self, seq_id):
@@ -77,7 +84,18 @@ class SeqInfo:
                 'taxonomy': self.taxonomy.values[self.taxonomy_ix[ix]],
                 }
 
-    def seq_filter(self, hq_only : bool, habitat_q : List[str], taxonomy_q : str):
+    def seq_filter(self,
+                   hq_only : bool,
+                   habitat_q : List[str],
+                   taxonomy_q : str,
+                   *,
+                   quality_antifam : Optional[bool] = None,
+                   quality_terminal : Optional[bool] = None,
+                   quality_rnacode : Optional[float] = None,
+                   quality_metap : Optional[int] = None,
+                   quality_metat : Optional[int] = None,
+                   quality_riboseq : Optional[float] = None,
+                   ):
         if habitat_q:
             habitat_r = self.habitat.str.contains(habitat_q[0]).values
             for q in habitat_q[1:]:
@@ -86,10 +104,36 @@ class SeqInfo:
         else:
             matches = np.ones(len(self.habitat_ix), dtype=bool)
         if hq_only:
+            if self.is_hq is None:
+                raise ValueError('High quality information not loaded')
             matches &= self.is_hq
         if taxonomy_q is not None:
             match_taxonomy = self.taxonomy.str.contains(taxonomy_q).values[self.taxonomy_ix]
             matches &= match_taxonomy
+        advanced_conditions = []
+        if quality_antifam is not None and quality_antifam:
+            advanced_conditions.append(pl.col('antifam'))
+        if quality_terminal is not None and quality_terminal:
+            advanced_conditions.append(pl.col('terminal'))
+        if quality_rnacode is not None:
+            advanced_conditions.append(pl.col('rnacode') <= quality_rnacode)
+        if quality_metap is not None:
+            advanced_conditions.append(pl.col('metap') >= quality_metap)
+        if quality_metat is not None:
+            advanced_conditions.append(pl.col('metat') >= quality_metat)
+        if quality_riboseq is not None:
+            advanced_conditions.append(pl.col('riboseq') >= quality_riboseq)
+        if advanced_conditions:
+            if self.quality_metrics is None:
+                raise ValueError('Quality metrics not loaded')
+            if len(advanced_conditions) == 1:
+                [advanced_conditions] = advanced_conditions
+            else:
+                advanced_conditions = advanced_conditions[0].and_(*advanced_conditions[1:])
+            sel = self.quality_metrics.select(advanced_conditions.alias('matched'))
+            matches &= sel['matched'].to_numpy()
+            advanced_conditions.append(('quality_terminal', quality_terminal))
+
         [ixs] = np.where(matches)
         # Highest numbers are best
         ixs = ixs[::-1]
