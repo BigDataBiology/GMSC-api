@@ -5,7 +5,7 @@
 ```bash
 conda create -n gmsc-api python=3.11
 conda activate gmsc-api
-conda install -c default -c conda-forge flask numpy pandas jug requests python-xz
+conda install -c default -c conda-forge flask numpy pandas polars jug requests python-xz
 ```
 
 ## Download data

@@ -158,6 +158,7 @@ Dependencies
 - `flask`
 - `numpy`
 - `pandas`
+- `polars`
 
 Running this (in test mode) can be done with
 
