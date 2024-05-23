@@ -14,9 +14,19 @@ Returns
     "nucleotide": "ATC...",
     "aminoacid": "MAV...",
     "taxonomy": "s__Bacteroides_vulgatus",
-    "habitat": "human gut"
+    "habitat": "human gut",
+    "quality": {
+        "antifam": true,
+        "terminal": true,
+        "rnacode": 0.9,
+        "metat": 1,
+        "metap": 1,
+        "riboseq": 0.9
+    }
 }
 ```
+
+Note that the `quality` field is only present for 90AA sequences.
 
 - `https://{{base_url}}/v1/seq-info-multi/`
 

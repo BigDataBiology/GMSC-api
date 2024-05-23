@@ -76,12 +76,19 @@ class SeqInfo:
             raise IndexError(f'Only IDs for database "{self.database}" are accepted (got "{seq_id}"')
 
         nuc = self.seqix.get(ix).decode('ascii')
+        quality = None
+        if self.quality_metrics is not None:
+            quality = dict(*zip(
+                ['antifam', 'terminal', 'rnacode', 'metat', 'riboseq', 'metap'],
+                self.quality_metrics.row(ix)
+                ))
         return {
                 "seq_id": seq_id,
                 "nucleotide": nuc,
                 "aminoacid": translate(nuc),
                 'habitat': self.habitat.values[self.habitat_ix[ix]],
                 'taxonomy': self.taxonomy.values[self.taxonomy_ix[ix]],
+                'quality': quality,
                 }
 
     def seq_filter(self,
