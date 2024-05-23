@@ -78,8 +78,8 @@ class SeqInfo:
         nuc = self.seqix.get(ix).decode('ascii')
         quality = None
         if self.quality_metrics is not None:
-            quality = dict(*zip(
-                ['antifam', 'terminal', 'rnacode', 'metat', 'riboseq', 'metap'],
+            quality = dict(zip(
+                self.quality_metrics.columns,
                 self.quality_metrics.row(ix)
                 ))
         return {

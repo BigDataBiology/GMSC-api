@@ -9,8 +9,8 @@ HASHES = {
     'GMSC10.100AA.annotation.tsv.xz': '50577cb91086e38d59f8053d2fbc65c5',
     'GMSC10.90AA.annotation.tsv.xz': 'b2cb758cb1892909b68b8463350e8be8',
     'GMSC10.90AA.txt.xz': '83470ca958d84b4df374b1f9d0338638',
-    'GMSC10.90AA.high_quality.tsv.xz': 'a0928a00e37c2959cb8e1b7ef4640828',
     'fna2faa_gmsc.py': '30cf3d9f82ecf9e4d89cfb476d88b60d',
+    'GMSC10.90AA.quality_test.tsv.xz': '678f547ffd88e5b6cde29be6dd3530b5',
     }
 
 
@@ -114,7 +114,7 @@ download_file_if_needed('fna2faa_gmsc.py')
 download_file_if_needed('GMSC10.100AA.annotation.tsv.xz')
 download_file_if_needed( 'GMSC10.90AA.annotation.tsv.xz')
 
-download_file_if_needed('GMSC10.90AA.high_quality.tsv.xz')
+download_file_if_needed('GMSC10.90AA.quality_test.tsv.xz')
 
 fna90 = create_90aa(
         download_file_if_needed('GMSC10.100AA.fna.xz'),
