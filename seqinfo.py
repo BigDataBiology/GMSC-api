@@ -118,10 +118,16 @@ class SeqInfo:
             match_taxonomy = self.taxonomy.str.contains(taxonomy_q).values[self.taxonomy_ix]
             matches &= match_taxonomy
         advanced_conditions = []
-        if quality_antifam is not None and quality_antifam:
-            advanced_conditions.append(pl.col('antifam'))
-        if quality_terminal is not None and quality_terminal:
-            advanced_conditions.append(pl.col('terminal'))
+        if quality_antifam is not None:
+            if quality_antifam:
+                advanced_conditions.append(pl.col('antifam'))
+            else: 
+                advanced_conditions.append(pl.col('antifam').not_())
+        if quality_terminal is not None:
+            if quality_terminal:
+                advanced_conditions.append(pl.col('terminal'))
+            else:
+                advanced_conditions.append(pl.col('terminal').not_())
         if quality_rnacode is not None:
             advanced_conditions.append(pl.col('rnacode') <= quality_rnacode)
         if quality_metap is not None:
@@ -139,7 +145,6 @@ class SeqInfo:
                 advanced_conditions = advanced_conditions[0].and_(*advanced_conditions[1:])
             sel = self.quality_metrics.select(advanced_conditions.alias('matched'))
             matches &= sel['matched'].to_numpy()
-            advanced_conditions.append(('quality_terminal', quality_terminal))
 
         [ixs] = np.where(matches)
         # Highest numbers are best
