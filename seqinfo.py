@@ -138,7 +138,7 @@ class SeqInfo:
                 matches = self.is_hq.copy()
             else:
                 matches &= self.is_hq
-        if taxonomy_q is not None:
+        if taxonomy_q:
             match_taxonomy = self.taxonomy.str.contains(taxonomy_q).values[self.taxonomy_ix]
             if matches is None:
                 matches = match_taxonomy
