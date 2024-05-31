@@ -18,6 +18,28 @@ def with_digits(prefix, n):
     n = f'{n:09}'
     return f'{prefix}.{n[:3]}_{n[3:6]}_{n[6:9]}'
 
+def get_hits(matches, max_results):
+    # Highest numbers are best
+    matches = matches[::-1]
+    [ixs] = np.where(matches[:max_results])
+    if len(ixs) == max_results:
+        ixs *= -1
+        ixs += len(matches) - 1
+        return ixs
+    max_results -= len(ixs)
+    chunks = [ixs]
+    while max_results > 0:
+        matches = matches[max_results:]
+        if not len(matches):
+            continue
+        [ixs] = np.where(matches[:max_results])
+        chunks.append(ixs)
+        max_results -= len(ixs)
+    ixs = np.concatenate(chunks)
+    ixs *= -1
+    ixs += len(matches) - 1
+    return ixs
+
 
 class IndexedFastaReader:
     def __init__(self, ifile):
@@ -146,11 +168,10 @@ class SeqInfo:
             sel = self.quality_metrics.select(advanced_conditions.alias('matched'))
             matches &= sel['matched'].to_numpy()
 
-        [ixs] = np.where(matches)
-        # Highest numbers are best
-        ixs = ixs[::-1]
+        ixs = get_hits(matches, MAX_TOTAL_RESULTS)
+
         rs = []
-        for i,ix in enumerate(ixs[:MAX_TOTAL_RESULTS]):
+        for i,ix in enumerate(ixs):
             seq_id = with_digits(f'GMSC10.{self.database}', ix)
             if i < MAX_THICK_RESULTS:
                 rs.append(self.get_seqinfo(seq_id))
