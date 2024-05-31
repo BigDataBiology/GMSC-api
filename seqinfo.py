@@ -125,25 +125,30 @@ class SeqInfo:
                    quality_metat : Optional[int] = None,
                    quality_riboseq : Optional[float] = None,
                    ):
+        matches = None
         if habitat_q:
             habitat_r = self.habitat.str.contains(habitat_q[0]).values
             for q in habitat_q[1:]:
                 habitat_r &= self.habitat.str.contains(q).values
             matches = habitat_r[self.habitat_ix]
-        else:
-            matches = np.ones(len(self.habitat_ix), dtype=bool)
         if hq_only:
             if self.is_hq is None:
                 raise ValueError('High quality information not loaded')
-            matches &= self.is_hq
+            if matches is None:
+                matches = self.is_hq.copy()
+            else:
+                matches &= self.is_hq
         if taxonomy_q is not None:
             match_taxonomy = self.taxonomy.str.contains(taxonomy_q).values[self.taxonomy_ix]
-            matches &= match_taxonomy
+            if matches is None:
+                matches = match_taxonomy
+            else:
+                matches &= match_taxonomy
         advanced_conditions = []
         if quality_antifam is not None:
             if quality_antifam:
                 advanced_conditions.append(pl.col('antifam'))
-            else: 
+            else:
                 advanced_conditions.append(pl.col('antifam').not_())
         if quality_terminal is not None:
             if quality_terminal:
@@ -166,9 +171,15 @@ class SeqInfo:
             else:
                 advanced_conditions = advanced_conditions[0].and_(*advanced_conditions[1:])
             sel = self.quality_metrics.select(advanced_conditions.alias('matched'))
-            matches &= sel['matched'].to_numpy()
+            if matches is None:
+                matches = sel['matched'].to_numpy()
+            else:
+                matches &= sel['matched'].to_numpy()
 
-        ixs = get_hits(matches, MAX_TOTAL_RESULTS)
+        if matches is not None:
+            ixs = get_hits(matches, MAX_TOTAL_RESULTS)
+        else:
+            ixs = np.arange(len(self.habitat_ix)-1, len(self.habitat_ix)-MAX_TOTAL_RESULTS-1, -1)
 
         rs = []
         for i,ix in enumerate(ixs):
