@@ -19,25 +19,29 @@ def with_digits(prefix, n):
     return f'{prefix}.{n[:3]}_{n[3:6]}_{n[6:9]}'
 
 def get_hits(matches, max_results):
+    n_matches = len(matches)
     # Highest numbers are best
     matches = matches[::-1]
     [ixs] = np.where(matches[:max_results])
     if len(ixs) == max_results:
         ixs *= -1
-        ixs += len(matches) - 1
+        ixs += n_matches - 1
         return ixs
     max_results -= len(ixs)
     chunks = [ixs]
+    ch_size = max_results
     while max_results > 0:
-        matches = matches[max_results:]
+        matches = matches[ch_size:]
         if not len(matches):
-            continue
-        [ixs] = np.where(matches[:max_results])
+            break
+        [ixs] = np.where(matches[:ch_size])
+        ixs += n_matches - len(matches)
         chunks.append(ixs)
         max_results -= len(ixs)
+        ch_size *= 2
     ixs = np.concatenate(chunks)
     ixs *= -1
-    ixs += len(matches) - 1
+    ixs += n_matches - 1
     return ixs
 
 
