@@ -99,6 +99,9 @@ def get_seq_filter():
         habitat = []
     else:
         habitat = habitat.split(",")
+        # Remove empty strings (also deals with the case where query is empty
+        # string by transforming it to the empty list, rather than [''])
+        habitat = [h for h in habitat if h]
     taxonomy = request.form.get('taxonomy')
     if taxonomy is None:
         taxonomy = ""
