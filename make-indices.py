@@ -133,7 +133,7 @@ def create_hq_list(ifile, index_dir):
     oname = f'{index_dir}/{oname}'
     indices = []
     #for ch in pd.read_table(ifile, header=None, chunksize=1_000_000):
-    for ch in pd.read_table(ifile,chunksize=1_000_000):
+    for ch in pd.read_table(ifile,chunksize=1_000_000, header=None):
         ch = ch.dropna()
         ch.columns = ['antifam', 'terminal', 'rnacode', 'metat', 'riboseq', 'metap']
         hq = ch.\
