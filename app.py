@@ -112,7 +112,7 @@ def get_seq_filter():
                             quality_antifam=parse_bool(request.form.get('quality_antifam')),
                             quality_terminal=parse_bool(request.form.get('quality_terminal')),
                             quality_rnacode=float_or_None(request.form.get('quality_rnacode')),
-                            quality_metap=int_or_None(request.form.get('quality_metap')),
+                            quality_metap=float_or_None(request.form.get('quality_metap')),
                             quality_metat=int_or_None(request.form.get('quality_metat')),
                             quality_riboseq=float_or_None(request.form.get('quality_riboseq')),
                             )
