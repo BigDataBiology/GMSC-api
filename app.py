@@ -2,7 +2,6 @@ from flask import Flask, request, jsonify
 from datetime import datetime
 from os import path, environ
 import threading
-from time import sleep
 from concurrent.futures import ThreadPoolExecutor
 from collections import namedtuple
 
@@ -199,7 +198,6 @@ def seq_search_results(search_id):
     sdata = searches[search_id].future
     if not sdata.done():
         status = 'Running' if sdata.running() else 'Queued'
-        sleep(1)
         return {
                 "search_id": search_id,
                 "status": status,
