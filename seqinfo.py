@@ -3,6 +3,7 @@ import polars as pl
 import pandas as pd
 
 import gzip
+import threading
 import numpy as np
 from os import path
 from fna2faa_gmsc import translate
@@ -53,10 +54,12 @@ class IndexedFastaReader:
         else:
             self.seqfile = open(ifile, 'rb')
         self.sindex = np.load(ifile.replace(BASE_DIR, INDEX_DIR) + '.starts.npy', mmap_mode='r')
+        self._lock = threading.Lock()
 
     def get(self, ix):
-        self.seqfile.seek(int(self.sindex[ix]))
-        data = self.seqfile.read(int(self.sindex[ix+1] - self.sindex[ix]))
+        with self._lock:
+            self.seqfile.seek(int(self.sindex[ix]))
+            data = self.seqfile.read(int(self.sindex[ix+1] - self.sindex[ix]))
         _h, seq, _empty = data.split(b'\n')
         return seq
 
