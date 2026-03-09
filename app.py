@@ -193,9 +193,11 @@ def seq_search():
 
 @app.get('/internal/seq-search/<search_id>')
 def seq_search_results(search_id):
-    if search_id not in searches:
+    with search_lock:
+        sobj = searches.get(search_id)
+    if sobj is None:
         return {"error": "Invalid search ID"}, 400
-    sdata = searches[search_id].future
+    sdata = sobj.future
     if not sdata.done():
         status = 'Running' if sdata.running() else 'Queued'
         return {
@@ -223,11 +225,13 @@ def seq_search_list():
         if f.running():
             return "Running"
         return "Queued"
+    with search_lock:
+        items = list(searches.items())
     return {
             "status": "Ok",
             "searches": [
                 {"search_id": k,
                 "status": status_for(v.future),
-                } for k,v in searches.items()],
+                } for k,v in items],
             }
 
