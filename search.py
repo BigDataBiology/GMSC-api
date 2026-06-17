@@ -61,12 +61,7 @@ def do_search(seqdata, sid, is_contigs, nr_threads):
                  ('--input' if is_contigs else '--aa-genes'), fname,
                  '-o', path.join(tdir, "output"),
                  '--threads', str(nr_threads),
-                 '--db', f'{DB_DIR}/GMSC10.90AA.diamonddb.dmnd',
-                 '--habitat', f'{DB_DIR}/GMSC10.90AA.habitat.npy',
-                 '--habitat-index', f'{DB_DIR}/GMSC10.90AA.habitat.index.tsv',
-                 '--quality', f'{DB_DIR}/GMSC10.90AA.high_quality.tsv.xz',
-                 '--taxonomy', f'{DB_DIR}/GMSC10.90AA.taxonomy.npy',
-                 '--taxonomy-index', f'{DB_DIR}/GMSC10.90AA.taxonomy.index.tsv',
+                 '--dbdir', DB_DIR,
                  ],
                 )
         r = parse_gmsc_mapper_results(path.join(tdir, "output"))
